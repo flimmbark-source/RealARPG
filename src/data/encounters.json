@@ -1,0 +1,111 @@
+{
+  "encounters": [
+    {
+      "id": "enc_standard_scrap_lane",
+      "name": "Scrap Lane Ambush",
+      "type": "standard",
+      "context": "ruined_alley",
+      "enemyIds": ["standard_scavenger"],
+      "rewardTable": { "dropCount": 1, "sourceType": "standard_enemy" }
+    },
+    {
+      "id": "enc_standard_plague_den",
+      "name": "Plague Den",
+      "type": "standard",
+      "context": "sewer_tunnel",
+      "enemyIds": ["standard_blight_rat", "standard_blight_rat"],
+      "rewardTable": { "dropCount": 1, "sourceType": "standard_enemy" }
+    },
+    {
+      "id": "enc_standard_frozen_watch",
+      "name": "Frozen Watch",
+      "type": "standard",
+      "context": "frost_ruins",
+      "enemyIds": ["standard_ice_imp", "standard_scavenger"],
+      "rewardTable": { "dropCount": 2, "sourceType": "standard_enemy" }
+    },
+    {
+      "id": "enc_standard_bone_crossfire",
+      "name": "Bone Crossfire",
+      "type": "standard",
+      "context": "graveyard_path",
+      "enemyIds": ["standard_bone_archer"],
+      "rewardTable": { "dropCount": 2, "sourceType": "standard_enemy" }
+    },
+    {
+      "id": "enc_elite_reaver_line",
+      "name": "Reaver Linebreaker",
+      "type": "elite",
+      "context": "iron_gate",
+      "enemyIds": ["elite_iron_reaver"],
+      "rewardTable": { "dropCount": 2, "sourceType": "elite_enemy" }
+    },
+    {
+      "id": "enc_elite_venom_host",
+      "name": "Venom Host",
+      "type": "elite",
+      "context": "toxic_nest",
+      "enemyIds": ["elite_venom_matron", "standard_blight_rat"],
+      "rewardTable": { "dropCount": 2, "sourceType": "elite_enemy" }
+    },
+    {
+      "id": "enc_elite_frost_hold",
+      "name": "Frost Hold",
+      "type": "elite",
+      "context": "glacier_gate",
+      "enemyIds": ["elite_frost_keeper", "standard_ice_imp"],
+      "rewardTable": { "dropCount": 3, "sourceType": "elite_enemy" }
+    },
+    {
+      "id": "enc_elite_hydra_warren",
+      "name": "Hydra Warren",
+      "type": "elite",
+      "context": "blood_marsh",
+      "enemyIds": ["elite_war_hydra"],
+      "rewardTable": { "dropCount": 3, "sourceType": "elite_enemy" }
+    }
+  ],
+  "chests": [
+    {
+      "type": "common",
+      "dropSourceType": "common_chest",
+      "triggersEncounter": false,
+      "encounterId": null,
+      "dropCount": 1
+    },
+    {
+      "type": "timed",
+      "dropSourceType": "common_chest",
+      "triggersEncounter": false,
+      "encounterId": null,
+      "dropCount": 1
+    },
+    {
+      "type": "cursed",
+      "dropSourceType": "elite_chest",
+      "triggersEncounter": true,
+      "encounterId": "enc_elite_hydra_warren",
+      "dropCount": 2
+    }
+  ],
+  "shrines": [
+    {
+      "type": "attack",
+      "name": "Shrine of Ruin",
+      "buff": { "stat": "atk", "value": 6 },
+      "durationEncounters": 3
+    },
+    {
+      "type": "defense",
+      "name": "Shrine of Bulwark",
+      "buff": { "stat": "def", "value": 6 },
+      "durationEncounters": 3
+    },
+    {
+      "type": "haste",
+      "name": "Shrine of Velocity",
+      "buff": { "stat": "haste", "value": 12 },
+      "durationEncounters": 3
+    }
+  ]
+}
