@@ -147,19 +147,26 @@ export const createLegendaryItem = (legendaryId: string, seed: number): Item => 
   }
 }
 
-export const rollDrop = (sourceType: DropSourceType, seed: number): { rarity: Rarity; baseId: string } => {
+export const rollDrop = (sourceType: DropSourceType, seed: number, findBonus = 0): { rarity: Rarity; baseId: string } => {
   const rng = createRng(seed)
   const rates = DROP_RATE_TABLE[sourceType]
   const roll = rng()
   let cursor = 0
   let selected: Rarity = Rarity.Common
-  for (const rarity of [Rarity.Common, Rarity.Magic, Rarity.Rare, Rarity.Epic, Rarity.Legendary]) {
+  const rarityOrder = [Rarity.Common, Rarity.Magic, Rarity.Rare, Rarity.Epic, Rarity.Legendary]
+  for (const rarity of rarityOrder) {
     const rate = (rates as Record<string, number>)[rarity] ?? 0
     cursor += rate
     if (roll <= cursor) {
       selected = rarity
       break
     }
+  }
+
+  const clampedFindBonus = Math.max(0, Math.min(0.04, findBonus))
+  if (clampedFindBonus > 0 && rng() < clampedFindBonus) {
+    const currentIndex = rarityOrder.indexOf(selected)
+    selected = rarityOrder[Math.min(rarityOrder.length - 1, currentIndex + 1)]
   }
 
   return {

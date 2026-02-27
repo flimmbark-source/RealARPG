@@ -144,8 +144,11 @@ describe('phase 0 type instantiation', () => {
       mapState: [node],
       feedEntries: [feedEntry],
       lastSaveTimestamp: Date.now(),
-      xp: 0,
-      level: 1,
+      progression: {
+        level: 1,
+        xp: 0,
+        lifeStats: { vitality: 0, focus: 0, exploration: 0 },
+      },
     }
 
     expect(result.winner).toBe('hero')

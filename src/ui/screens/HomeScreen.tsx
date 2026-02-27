@@ -16,7 +16,7 @@ export const HomeScreen = () => {
     <section className="space-y-4">
       <header>
         <h1 className="text-xl font-semibold">Home</h1>
-        <p className="text-sm text-slate-600">{state.hero.name} • Level {state.level}</p>
+        <p className="text-sm text-slate-600">{state.hero.name} • Level {state.progression.level}</p>
       </header>
 
       <div className="grid grid-cols-2 gap-2 rounded border border-slate-200 p-3 text-sm">

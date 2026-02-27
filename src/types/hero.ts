@@ -17,6 +17,7 @@ export interface HeroState {
   critChance: number
   critMultiplier: number
   haste: number
+  findBonus?: number
   equippedItems: Partial<Record<ItemSlot, Item>>
   tags: string[]
   // abilitySlots: unknown // MVP_LATER

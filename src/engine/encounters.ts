@@ -114,7 +114,7 @@ export const calcDangerRating = (hero: HeroState, encounter: Encounter, baseSeed
 export const resolveEncounterReward = (encounter: Encounter, _hero: HeroState, seed: number) => {
   const rewards = []
   for (let i = 0; i < encounter.rewardTable.dropCount; i += 1) {
-    const drop = rollDrop(encounter.rewardTable.sourceType, seed + i * 7919)
+    const drop = rollDrop(encounter.rewardTable.sourceType, seed + i * 7919, _hero.findBonus ?? 0)
     rewards.push(generateItem(drop.baseId, drop.rarity, seed + i * 104729))
   }
   return rewards

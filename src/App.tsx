@@ -16,6 +16,7 @@ const navItems = [
   { to: '/inventory', label: 'Inventory', icon: '🎒' },
   { to: '/feed', label: 'Feed', icon: '📰' },
   { to: '/combat-test', label: 'Combat Test', icon: '🧪' },
+  { to: '/progression', label: 'Progression', icon: '📈' },
 ]
 
 function App() {
@@ -36,7 +37,7 @@ function App() {
         </div>
 
         <nav className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white">
-          <ul className="mx-auto grid max-w-md grid-cols-6">
+          <ul className="mx-auto grid max-w-md grid-cols-7">
             {navItems.map((item) => (
               <li key={item.to}>
                 <NavLink
