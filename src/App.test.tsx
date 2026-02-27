@@ -34,6 +34,23 @@ describe('App shell routing', () => {
     expect(screen.getByText('Select an available fight node from the map first.')).toBeInTheDocument()
   })
 
+
+
+  it('renders progression screen and applies life-stat slider changes', () => {
+    render(
+      <MemoryRouter initialEntries={['/progression']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Progression' })).toBeInTheDocument()
+    const focus = screen.getByLabelText('Focus') as HTMLInputElement
+    fireEvent.change(focus, { target: { value: '100' } })
+
+    fireEvent.click(screen.getByRole('link', { name: '🏠Home' }))
+    expect(screen.getByText(/Crit:\s*[0-9]+\.[0-9]%/)).toBeInTheDocument()
+  })
+
   it('supports Dev Mode node forcing and map regeneration controls', () => {
     render(
       <MemoryRouter initialEntries={['/map']}>

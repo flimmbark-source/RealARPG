@@ -11,8 +11,11 @@ const sampleState = (): SaveData => ({
   mapState: [],
   feedEntries: [],
   lastSaveTimestamp: 100,
-  xp: 10,
-  level: 2,
+  progression: {
+    level: 2,
+    xp: 10,
+    lifeStats: { vitality: 0, focus: 0, exploration: 0 },
+  },
 })
 
 describe('save persistence', () => {

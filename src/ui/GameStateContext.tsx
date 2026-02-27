@@ -1,13 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
-import { ENEMY_GROUPS } from '../data/combatFixtures'
-import { calcDangerRating, resolveEncounterReward, resolveEncounterTemplate } from '../engine/encounters'
-import { compareItems, equipItem as applyEquipItem, generateItem, unequipItem as applyUnequipItem } from '../engine/loot'
+import { ARCHETYPE_STARTERS, ENEMY_GROUPS } from '../data/combatFixtures'
 import { simulateBattle } from '../engine/combat'
+import { calcDangerRating, resolveEncounterReward, resolveEncounterTemplate } from '../engine/encounters'
+import { compareItems, equipItem as applyEquipItem, generateItem, recalculateHeroStats, unequipItem as applyUnequipItem } from '../engine/loot'
+import { applyProgressionToHero, createDefaultProgression, gainXp, getEncounterXpReward, setLifeStat } from '../engine/progression'
 import { loadGame, saveGame } from '../persistence/save'
-import type { FeedEntry, Item, ItemSlot, MapNode, SaveData } from '../types'
-import { ARCHETYPE_STARTERS } from '../data/combatFixtures'
-import { Rarity, type HeroState } from '../types'
+import { Rarity, type FeedEntry, type HeroState, type Item, type ItemSlot, type MapNode, type ProgressionState, type SaveData } from '../types'
 
 type PlayerMode = 'active' | 'passive' | 'dev'
 type DevEncounterFilter = Record<MapNode['type'], boolean>
@@ -44,6 +43,7 @@ interface GameStateContextValue {
   regenerateMapNodes: () => void
   equipItem: (itemId: string) => void
   unequipItem: (slot: ItemSlot) => void
+  setLifeSlider: (stat: keyof ProgressionState['lifeStats'], value: number) => void
   resolveSelectedEncounter: () => ResolveEncounterOutcome | null
   resolveSelectedNodeDirectly: () => ResolveEncounterOutcome | null
   getItemComparison: (candidate: Item) => ReturnType<typeof compareItems>
@@ -62,8 +62,22 @@ const initialMapNodes = (): MapNode[] => [
   { id: 'node_8', type: 'timed_chest', state: 'expired', position: { x: 78, y: 67 }, reward: 'Timed Spoils' },
 ]
 
+const addFeedEntry = (entries: FeedEntry[], entry: Omit<FeedEntry, 'id' | 'timestamp'>): FeedEntry[] => [
+  {
+    ...entry,
+    id: `feed_${Date.now()}_${Math.random().toString(16).slice(2, 6)}`,
+    timestamp: Date.now(),
+  },
+  ...entries,
+].slice(0, 30)
+
+const applyProgressionLayer = (hero: HeroState, progression: ProgressionState): HeroState =>
+  applyProgressionToHero(recalculateHeroStats(hero), progression)
+
 const createInitialState = (): SaveData => {
-  const hero = ARCHETYPE_STARTERS.thorns_warden
+  const baseHero = ARCHETYPE_STARTERS.thorns_warden
+  const progression = createDefaultProgression()
+  const hero = applyProgressionLayer(baseHero, progression)
   const starterInventory = [
     generateItem('weapon_iron_sword', Rarity.Common, 91),
     generateItem('armor_bastion_plate', Rarity.Magic, 92),
@@ -84,24 +98,39 @@ const createInitialState = (): SaveData => {
       },
     ],
     lastSaveTimestamp: Date.now(),
-    xp: 0,
-    level: 1,
+    progression,
+  }
+}
+
+const normalizeState = (saveData: SaveData | null): SaveData => {
+  if (!saveData) return createInitialState()
+
+  const rawProgression = (saveData as SaveData & { level?: number; xp?: number }).progression
+    ?? {
+      level: (saveData as SaveData & { level?: number }).level ?? 1,
+      xp: (saveData as SaveData & { xp?: number }).xp ?? 0,
+      lifeStats: { vitality: 0, focus: 0, exploration: 0 },
+    }
+
+  return {
+    ...saveData,
+    hero: applyProgressionLayer({ ...saveData.hero, equippedItems: saveData.equippedItems }, rawProgression),
+    progression: {
+      level: rawProgression.level,
+      xp: rawProgression.xp,
+      lifeStats: {
+        vitality: rawProgression.lifeStats?.vitality ?? 0,
+        focus: rawProgression.lifeStats?.focus ?? 0,
+        exploration: rawProgression.lifeStats?.exploration ?? 0,
+      },
+    },
   }
 }
 
 const GameStateContext = createContext<GameStateContextValue | null>(null)
 
-const addFeedEntry = (entries: FeedEntry[], entry: Omit<FeedEntry, 'id' | 'timestamp'>): FeedEntry[] => [
-  {
-    ...entry,
-    id: `feed_${Date.now()}_${Math.random().toString(16).slice(2, 6)}`,
-    timestamp: Date.now(),
-  },
-  ...entries,
-].slice(0, 30)
-
 export const GameStateProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<SaveData>(() => loadGame() ?? createInitialState())
+  const [state, setState] = useState<SaveData>(() => normalizeState(loadGame()))
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [playerMode, setPlayerMode] = useState<PlayerMode>('active')
   const [devPlayerPosition, setDevPlayerPosition] = useState({ x: 50, y: 50 })
@@ -129,7 +158,8 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
       const candidate = current.inventory.find((item) => item.instanceId === itemId)
       if (!candidate) return current
 
-      const heroWithItem = applyEquipItem(current.hero, candidate)
+      const baseHeroWithItem = applyEquipItem({ ...current.hero, equippedItems: current.equippedItems }, candidate)
+      const heroWithItem = applyProgressionToHero(baseHeroWithItem, current.progression)
       const nextInventory = current.inventory.filter((item) => item.instanceId !== itemId)
       const replaced = current.equippedItems[candidate.slot]
       if (replaced && nextInventory.length < INVENTORY_CAP) {
@@ -152,12 +182,24 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
         return current
       }
 
-      const heroWithoutItem = applyUnequipItem(current.hero, slot)
+      const baseHeroWithoutItem = applyUnequipItem({ ...current.hero, equippedItems: current.equippedItems }, slot)
+      const heroWithoutItem = applyProgressionToHero(baseHeroWithoutItem, current.progression)
       return {
         ...current,
         hero: heroWithoutItem,
         inventory: [...current.inventory, equipped],
         equippedItems: heroWithoutItem.equippedItems,
+      }
+    })
+  }, [])
+
+  const setLifeSlider = useCallback((stat: keyof ProgressionState['lifeStats'], value: number) => {
+    setState((current) => {
+      const progression = setLifeStat(current.progression, stat, value)
+      return {
+        ...current,
+        progression,
+        hero: applyProgressionToHero(recalculateHeroStats({ ...current.hero, equippedItems: current.equippedItems }), progression),
       }
     })
   }, [])
@@ -222,8 +264,16 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
       const lootToAdd = loot.slice(0, freeSlots)
       outcome = { result, loot: lootToAdd }
 
+      const xpReward = result.winner === 'hero' ? getEncounterXpReward(node.type) : 0
+      const progression = gainXp(current.progression, xpReward)
+      const heroWithProgression = progression === current.progression
+        ? current.hero
+        : applyProgressionToHero(recalculateHeroStats({ ...current.hero, equippedItems: current.equippedItems }), progression)
+
       return {
         ...current,
+        progression,
+        hero: heroWithProgression,
         inventory: [...current.inventory, ...lootToAdd],
         mapState: current.mapState.map((entry) => (entry.id === node.id ? { ...entry, state: 'cleared' } : entry)),
         feedEntries: addFeedEntry(
@@ -231,7 +281,7 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
             type: result.winner === 'hero' ? 'fight_won' : 'fight_lost',
             summary:
               result.winner === 'hero'
-                ? `${encounter.name} cleared. HP left: ${Math.round(result.hpRemaining)}.`
+                ? `${encounter.name} cleared. HP left: ${Math.round(result.hpRemaining)}. +${xpReward} XP.`
                 : `${encounter.name} failed. Regroup before retrying.`,
           }),
           lootToAdd.length > 0
@@ -270,13 +320,21 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
         const lootToAdd = loot.slice(0, freeSlots)
         directOutcome = { result, loot: lootToAdd }
 
+        const xpReward = result.winner === 'hero' ? getEncounterXpReward(node.type) : 0
+        const progression = gainXp(current.progression, xpReward)
+        const heroWithProgression = progression === current.progression
+          ? current.hero
+          : applyProgressionToHero(recalculateHeroStats({ ...current.hero, equippedItems: current.equippedItems }), progression)
+
         return {
           ...current,
+          progression,
+          hero: heroWithProgression,
           inventory: [...current.inventory, ...lootToAdd],
           mapState: current.mapState.map((entry) => (entry.id === node.id ? { ...entry, state: 'cleared' } : entry)),
           feedEntries: addFeedEntry(current.feedEntries, {
             type: result.winner === 'hero' ? 'fight_won' : 'fight_lost',
-            summary: `${encounter.name} force-resolved in Dev Mode (${result.winner}).`,
+            summary: `${encounter.name} force-resolved in Dev Mode (${result.winner}). +${xpReward} XP.`,
           }),
         }
       }
@@ -366,6 +424,7 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
       regenerateMapNodes,
       equipItem,
       unequipItem,
+      setLifeSlider,
       resolveSelectedEncounter,
       resolveSelectedNodeDirectly,
       getItemComparison,
@@ -384,10 +443,12 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
       selectMapNode,
       setDevEncounterFilter,
       setDevPlayerPosition,
+      setLifeSlider,
       setPlayerMode,
       selectedEncounter,
       selectedNodeId,
       state,
+      unequipItem,
       visibleMapNodes,
     ],
   )

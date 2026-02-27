@@ -3,6 +3,16 @@ import type { HeroState } from './hero'
 import type { Item, ItemSlot } from './item'
 import type { MapNode } from './map'
 
+export interface ProgressionState {
+  level: number
+  xp: number
+  lifeStats: {
+    vitality: number
+    focus: number
+    exploration: number
+  }
+}
+
 export interface InventoryState {
   items: Item[] // max 24 slots
   equipped: Partial<Record<ItemSlot, Item>>
@@ -15,6 +25,5 @@ export interface SaveData {
   mapState: MapNode[]
   feedEntries: FeedEntry[]
   lastSaveTimestamp: number
-  xp: number
-  level: number
+  progression: ProgressionState
 }
