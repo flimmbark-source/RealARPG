@@ -1,24 +1,32 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
 import App from './App'
 
-describe('App', () => {
-  it('renders combat debug harness controls', () => {
-    render(<App />)
+describe('App shell routing', () => {
+  it('renders home and bottom navigation', () => {
+    render(
+      <MemoryRouter initialEntries={['/home']}>
+        <App />
+      </MemoryRouter>,
+    )
 
-    expect(screen.getByText('Combat Test Debug Harness')).toBeInTheDocument()
-    expect(screen.getByLabelText('Archetype')).toBeInTheDocument()
-    expect(screen.getByLabelText('Enemy Group')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Fight' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Home' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '🗺️Map' })).toBeInTheDocument()
   })
 
-  it('runs a fight and prints a battle summary', () => {
-    render(<App />)
+  it('navigates to map and encounter fallback', () => {
+    render(
+      <MemoryRouter initialEntries={['/home']}>
+        <App />
+      </MemoryRouter>,
+    )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Fight' }))
+    fireEvent.click(screen.getByRole('link', { name: '🗺️Map' }))
+    expect(screen.getByText('Tap a node to inspect risk and rewards.')).toBeInTheDocument()
 
-    expect(screen.getByText(/winner:/i)).toBeInTheDocument()
-    expect(screen.getByText(/events:/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('link', { name: '⚔️Encounter' }))
+    expect(screen.getByText('Select an available fight node from the map first.')).toBeInTheDocument()
   })
 })
