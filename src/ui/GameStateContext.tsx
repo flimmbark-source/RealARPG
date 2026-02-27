@@ -9,6 +9,9 @@ import type { FeedEntry, Item, ItemSlot, MapNode, SaveData } from '../types'
 import { ARCHETYPE_STARTERS } from '../data/combatFixtures'
 import { Rarity, type HeroState } from '../types'
 
+type PlayerMode = 'active' | 'passive' | 'dev'
+type DevEncounterFilter = Record<MapNode['type'], boolean>
+
 interface EncounterPreviewState {
   node: MapNode
   danger: ReturnType<typeof calcDangerRating>
@@ -24,15 +27,25 @@ interface ResolveEncounterOutcome {
 interface GameStateContextValue {
   state: SaveData
   mapNodes: MapNode[]
+  visibleMapNodes: MapNode[]
   feedEntries: FeedEntry[]
+  selectedNode: MapNode | null
   selectedNodeId: string | null
   selectedEncounter: EncounterPreviewState | null
   canAddInventoryItem: boolean
+  playerMode: PlayerMode
+  devEncounterFilters: DevEncounterFilter
+  devPlayerPosition: { x: number; y: number }
   selectMapNode: (nodeId: string) => void
   clearSelectedNode: () => void
+  setPlayerMode: (mode: PlayerMode) => void
+  setDevEncounterFilter: (type: MapNode['type'], enabled: boolean) => void
+  setDevPlayerPosition: (position: { x: number; y: number }) => void
+  regenerateMapNodes: () => void
   equipItem: (itemId: string) => void
   unequipItem: (slot: ItemSlot) => void
   resolveSelectedEncounter: () => ResolveEncounterOutcome | null
+  resolveSelectedNodeDirectly: () => ResolveEncounterOutcome | null
   getItemComparison: (candidate: Item) => ReturnType<typeof compareItems>
 }
 
@@ -90,6 +103,16 @@ const addFeedEntry = (entries: FeedEntry[], entry: Omit<FeedEntry, 'id' | 'times
 export const GameStateProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<SaveData>(() => loadGame() ?? createInitialState())
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+  const [playerMode, setPlayerMode] = useState<PlayerMode>('active')
+  const [devPlayerPosition, setDevPlayerPosition] = useState({ x: 50, y: 50 })
+  const [devEncounterFilters, setDevEncounterFilters] = useState<DevEncounterFilter>({
+    standard_fight: true,
+    elite_fight: true,
+    common_chest: true,
+    timed_chest: true,
+    cursed_chest: true,
+    shrine: true,
+  })
 
   useEffect(() => {
     saveGame({ ...state, lastSaveTimestamp: Date.now() })
@@ -139,9 +162,37 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
     })
   }, [])
 
-  const selectedEncounter = useMemo(() => {
+  const setDevEncounterFilter = useCallback((type: MapNode['type'], enabled: boolean) => {
+    setDevEncounterFilters((current) => ({ ...current, [type]: enabled }))
+  }, [])
+
+  const regenerateMapNodes = useCallback(() => {
+    setState((current) => ({
+      ...current,
+      mapState: initialMapNodes().map((node) => ({
+        ...node,
+        state: 'available',
+        position: {
+          x: Math.min(90, Math.max(10, node.position.x + Math.round((Math.random() - 0.5) * 12))),
+          y: Math.min(90, Math.max(10, node.position.y + Math.round((Math.random() - 0.5) * 12))),
+        },
+      })),
+      feedEntries: addFeedEntry(current.feedEntries, {
+        type: 'passive_summary',
+        summary: 'Dev Mode map refresh complete. Local test nodes regenerated.',
+      }),
+    }))
+    setSelectedNodeId(null)
+  }, [])
+
+  const selectedNode = useMemo(() => {
     if (!selectedNodeId) return null
-    const node = state.mapState.find((entry) => entry.id === selectedNodeId)
+    return state.mapState.find((entry) => entry.id === selectedNodeId) ?? null
+  }, [selectedNodeId, state.mapState])
+
+  const selectedEncounter = useMemo(() => {
+    if (!selectedNode) return null
+    const node = selectedNode
     if (!node || !node.encounterId || node.state !== 'available') return null
 
     const encounter = resolveEncounterTemplate(node.encounterId)
@@ -151,7 +202,7 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
       encounterName: encounter.name ?? node.id,
       enemies: encounter.enemies.enemies,
     }
-  }, [selectedNodeId, state.hero, state.mapState])
+  }, [selectedNode, state.hero])
 
   const resolveSelectedEncounter = useCallback((): ResolveEncounterOutcome | null => {
     if (!selectedNodeId) return null
@@ -200,6 +251,95 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
     return outcome
   }, [selectedNodeId])
 
+  const resolveSelectedNodeDirectly = useCallback((): ResolveEncounterOutcome | null => {
+    if (!selectedNodeId) return null
+
+    let directOutcome: ResolveEncounterOutcome | null = null
+
+    setState((current) => {
+      const node = current.mapState.find((entry) => entry.id === selectedNodeId)
+      if (!node || node.state !== 'available') {
+        return current
+      }
+
+      if (node.encounterId) {
+        const encounter = resolveEncounterTemplate(node.encounterId)
+        const result = simulateBattle(current.hero, encounter.enemies.enemies, Date.now())
+        const loot = result.winner === 'hero' ? resolveEncounterReward(encounter, current.hero, Date.now()) : []
+        const freeSlots = Math.max(0, INVENTORY_CAP - current.inventory.length)
+        const lootToAdd = loot.slice(0, freeSlots)
+        directOutcome = { result, loot: lootToAdd }
+
+        return {
+          ...current,
+          inventory: [...current.inventory, ...lootToAdd],
+          mapState: current.mapState.map((entry) => (entry.id === node.id ? { ...entry, state: 'cleared' } : entry)),
+          feedEntries: addFeedEntry(current.feedEntries, {
+            type: result.winner === 'hero' ? 'fight_won' : 'fight_lost',
+            summary: `${encounter.name} force-resolved in Dev Mode (${result.winner}).`,
+          }),
+        }
+      }
+
+      if (node.type.includes('chest')) {
+        const freeSlots = Math.max(0, INVENTORY_CAP - current.inventory.length)
+        const chestLoot = freeSlots > 0 ? [generateItem('ring_precision', Rarity.Magic, Date.now())] : []
+        directOutcome = {
+          result: {
+            winner: 'hero',
+            turns: [],
+            hpRemaining: current.hero.hp,
+            totalDamageDealt: 0,
+            totalDamageTaken: 0,
+          },
+          loot: chestLoot,
+        }
+
+        return {
+          ...current,
+          inventory: [...current.inventory, ...chestLoot],
+          mapState: current.mapState.map((entry) => (entry.id === node.id ? { ...entry, state: 'cleared' } : entry)),
+          feedEntries: addFeedEntry(current.feedEntries, {
+            type: 'loot_found',
+            summary: `${node.reward ?? node.id} opened in Dev Mode.`,
+            loot: chestLoot,
+          }),
+        }
+      }
+
+      if (node.type === 'shrine') {
+        directOutcome = {
+          result: {
+            winner: 'hero',
+            turns: [],
+            hpRemaining: current.hero.hp,
+            totalDamageDealt: 0,
+            totalDamageTaken: 0,
+          },
+          loot: [],
+        }
+
+        return {
+          ...current,
+          mapState: current.mapState.map((entry) => (entry.id === node.id ? { ...entry, state: 'cleared' } : entry)),
+          feedEntries: addFeedEntry(current.feedEntries, {
+            type: 'passive_summary',
+            summary: `${node.reward ?? node.id} activated in Dev Mode.`,
+          }),
+        }
+      }
+
+      return current
+    })
+
+    return directOutcome
+  }, [selectedNodeId])
+
+  const visibleMapNodes = useMemo(
+    () => (playerMode === 'dev' ? state.mapState.filter((node) => devEncounterFilters[node.type]) : state.mapState),
+    [devEncounterFilters, playerMode, state.mapState],
+  )
+
   const getItemComparison = useCallback(
     (candidate: Item) => compareItems(state.equippedItems[candidate.slot], candidate, state.hero),
     [state.equippedItems, state.hero],
@@ -209,26 +349,46 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
     () => ({
       state,
       mapNodes: state.mapState,
+      visibleMapNodes,
       feedEntries: state.feedEntries,
+      selectedNode,
       selectedNodeId,
       selectedEncounter,
       canAddInventoryItem: state.inventory.length < INVENTORY_CAP,
+      playerMode,
+      devEncounterFilters,
+      devPlayerPosition,
       selectMapNode,
       clearSelectedNode,
+      setPlayerMode,
+      setDevEncounterFilter,
+      setDevPlayerPosition,
+      regenerateMapNodes,
       equipItem,
       unequipItem,
       resolveSelectedEncounter,
+      resolveSelectedNodeDirectly,
       getItemComparison,
     }),
     [
+      devEncounterFilters,
+      devPlayerPosition,
       clearSelectedNode,
       equipItem,
       getItemComparison,
+      playerMode,
+      regenerateMapNodes,
+      resolveSelectedNodeDirectly,
       resolveSelectedEncounter,
+      selectedNode,
       selectMapNode,
+      setDevEncounterFilter,
+      setDevPlayerPosition,
+      setPlayerMode,
       selectedEncounter,
       selectedNodeId,
       state,
+      visibleMapNodes,
     ],
   )
 
