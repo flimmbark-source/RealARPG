@@ -1,0 +1,58 @@
+[
+  {
+    "id": "thorns_warden",
+    "name": "Thorns Warden",
+    "tags": ["warden", "thorns", "barrier", "physical"],
+    "equippedBaseIds": {
+      "weapon": "weapon_bastion_mace",
+      "offhand": "offhand_kite_shield",
+      "armor": "armor_bastion_plate",
+      "boots": "boots_iron_greaves",
+      "ring": "ring_guard",
+      "amulet": "amulet_warding",
+      "relic": "relic_bramble_idol"
+    }
+  },
+  {
+    "id": "poison_rogue",
+    "name": "Poison Rogue",
+    "tags": ["rogue", "poison", "dagger", "physical"],
+    "equippedBaseIds": {
+      "weapon": "weapon_venom_dagger",
+      "offhand": "offhand_spike_buckler",
+      "armor": "armor_shadow_leather",
+      "boots": "boots_shadowstep",
+      "ring": "ring_venom",
+      "amulet": "amulet_serpent",
+      "relic": "relic_viper_fetish"
+    }
+  },
+  {
+    "id": "frost_mystic",
+    "name": "Frost Mystic",
+    "tags": ["mystic", "frost", "control", "splash"],
+    "equippedBaseIds": {
+      "weapon": "weapon_glacier_staff",
+      "offhand": "offhand_frost_tome",
+      "armor": "armor_glacial_robes",
+      "boots": "boots_froststride",
+      "ring": "ring_frostbite",
+      "amulet": "amulet_iceheart",
+      "relic": "relic_winter_orb"
+    }
+  },
+  {
+    "id": "crit_hunter",
+    "name": "Crit Hunter",
+    "tags": ["hunter", "crit", "bow", "single_target"],
+    "equippedBaseIds": {
+      "weapon": "weapon_hunter_bow",
+      "offhand": "offhand_quiver",
+      "armor": "armor_marksman_mail",
+      "boots": "boots_ranger_treads",
+      "ring": "ring_precision",
+      "amulet": "amulet_deadeye",
+      "relic": "relic_eagle_talon"
+    }
+  }
+]

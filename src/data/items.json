@@ -1,0 +1,917 @@
+{
+  "bases": [
+    {
+      "id": "weapon_iron_sword",
+      "name": "Iron Sword",
+      "slot": "weapon",
+      "baseStats": {
+        "atk": 8
+      },
+      "tags": [
+        "warden",
+        "melee",
+        "physical"
+      ],
+      "allowedAffixTags": [
+        "thorns",
+        "barrier",
+        "def",
+        "atk",
+        "bleed"
+      ]
+    },
+    {
+      "id": "weapon_venom_dagger",
+      "name": "Venom Dagger",
+      "slot": "weapon",
+      "baseStats": {
+        "atk": 7,
+        "haste": 6
+      },
+      "tags": [
+        "rogue",
+        "poison",
+        "dagger",
+        "physical"
+      ],
+      "allowedAffixTags": [
+        "poison",
+        "crit",
+        "haste",
+        "atk"
+      ]
+    },
+    {
+      "id": "weapon_glacier_staff",
+      "name": "Glacier Staff",
+      "slot": "weapon",
+      "baseStats": {
+        "atk": 7,
+        "critChance": 0.04
+      },
+      "tags": [
+        "mystic",
+        "frost",
+        "control",
+        "elemental"
+      ],
+      "allowedAffixTags": [
+        "frost",
+        "haste",
+        "crit",
+        "barrier"
+      ]
+    },
+    {
+      "id": "weapon_hunter_bow",
+      "name": "Hunter Bow",
+      "slot": "weapon",
+      "baseStats": {
+        "atk": 9,
+        "critChance": 0.05
+      },
+      "tags": [
+        "hunter",
+        "crit",
+        "bow",
+        "ranged"
+      ],
+      "allowedAffixTags": [
+        "crit",
+        "atk",
+        "haste",
+        "bleed"
+      ]
+    },
+    {
+      "id": "weapon_bastion_mace",
+      "name": "Bastion Mace",
+      "slot": "weapon",
+      "baseStats": {
+        "atk": 8,
+        "def": 4
+      },
+      "tags": [
+        "warden",
+        "barrier",
+        "melee",
+        "physical"
+      ],
+      "allowedAffixTags": [
+        "thorns",
+        "barrier",
+        "def",
+        "hp"
+      ]
+    },
+    {
+      "id": "weapon_firebrand_staff",
+      "name": "Firebrand Staff",
+      "slot": "weapon",
+      "baseStats": {
+        "atk": 8
+      },
+      "tags": [
+        "mystic",
+        "fire",
+        "burn",
+        "elemental"
+      ],
+      "allowedAffixTags": [
+        "fire",
+        "burn",
+        "haste",
+        "crit"
+      ]
+    },
+    {
+      "id": "offhand_kite_shield",
+      "name": "Kite Shield",
+      "slot": "offhand",
+      "baseStats": {
+        "def": 7,
+        "maxHp": 14
+      },
+      "tags": [
+        "warden",
+        "shield",
+        "barrier"
+      ],
+      "allowedAffixTags": [
+        "barrier",
+        "thorns",
+        "def",
+        "hp"
+      ]
+    },
+    {
+      "id": "offhand_spike_buckler",
+      "name": "Spike Buckler",
+      "slot": "offhand",
+      "baseStats": {
+        "def": 5,
+        "atk": 2
+      },
+      "tags": [
+        "warden",
+        "thorns",
+        "melee"
+      ],
+      "allowedAffixTags": [
+        "thorns",
+        "atk",
+        "def"
+      ]
+    },
+    {
+      "id": "offhand_frost_tome",
+      "name": "Frost Tome",
+      "slot": "offhand",
+      "baseStats": {
+        "haste": 5,
+        "critChance": 0.03
+      },
+      "tags": [
+        "mystic",
+        "frost",
+        "control"
+      ],
+      "allowedAffixTags": [
+        "frost",
+        "haste",
+        "crit",
+        "barrier"
+      ]
+    },
+    {
+      "id": "offhand_quiver",
+      "name": "Recurve Quiver",
+      "slot": "offhand",
+      "baseStats": {
+        "atk": 3,
+        "critChance": 0.04
+      },
+      "tags": [
+        "hunter",
+        "crit",
+        "bow"
+      ],
+      "allowedAffixTags": [
+        "crit",
+        "atk",
+        "haste"
+      ]
+    },
+    {
+      "id": "armor_bastion_plate",
+      "name": "Bastion Plate",
+      "slot": "armor",
+      "baseStats": {
+        "def": 12,
+        "maxHp": 24
+      },
+      "tags": [
+        "warden",
+        "barrier"
+      ],
+      "allowedAffixTags": [
+        "def",
+        "hp",
+        "barrier",
+        "thorns"
+      ]
+    },
+    {
+      "id": "armor_shadow_leather",
+      "name": "Shadow Leather",
+      "slot": "armor",
+      "baseStats": {
+        "def": 7,
+        "haste": 6
+      },
+      "tags": [
+        "rogue",
+        "poison"
+      ],
+      "allowedAffixTags": [
+        "poison",
+        "crit",
+        "haste",
+        "atk"
+      ]
+    },
+    {
+      "id": "armor_glacial_robes",
+      "name": "Glacial Robes",
+      "slot": "armor",
+      "baseStats": {
+        "def": 8,
+        "maxHp": 16
+      },
+      "tags": [
+        "mystic",
+        "frost",
+        "control"
+      ],
+      "allowedAffixTags": [
+        "frost",
+        "barrier",
+        "haste",
+        "hp"
+      ]
+    },
+    {
+      "id": "armor_marksman_mail",
+      "name": "Marksman Mail",
+      "slot": "armor",
+      "baseStats": {
+        "def": 8,
+        "critChance": 0.04
+      },
+      "tags": [
+        "hunter",
+        "crit",
+        "bow"
+      ],
+      "allowedAffixTags": [
+        "crit",
+        "atk",
+        "hp",
+        "haste"
+      ]
+    },
+    {
+      "id": "armor_scaled_hide",
+      "name": "Scaled Hide",
+      "slot": "armor",
+      "baseStats": {
+        "def": 10,
+        "maxHp": 18
+      },
+      "tags": [
+        "melee",
+        "physical"
+      ],
+      "allowedAffixTags": [
+        "def",
+        "hp",
+        "bleed"
+      ]
+    },
+    {
+      "id": "armor_runed_vest",
+      "name": "Runed Vest",
+      "slot": "armor",
+      "baseStats": {
+        "def": 9,
+        "haste": 4
+      },
+      "tags": [
+        "mystic",
+        "elemental"
+      ],
+      "allowedAffixTags": [
+        "frost",
+        "fire",
+        "haste",
+        "barrier"
+      ]
+    },
+    {
+      "id": "boots_iron_greaves",
+      "name": "Iron Greaves",
+      "slot": "boots",
+      "baseStats": {
+        "def": 4,
+        "haste": 3
+      },
+      "tags": [
+        "warden",
+        "melee"
+      ],
+      "allowedAffixTags": [
+        "def",
+        "hp",
+        "thorns",
+        "haste"
+      ]
+    },
+    {
+      "id": "boots_shadowstep",
+      "name": "Shadowstep Boots",
+      "slot": "boots",
+      "baseStats": {
+        "haste": 8
+      },
+      "tags": [
+        "rogue",
+        "poison"
+      ],
+      "allowedAffixTags": [
+        "haste",
+        "poison",
+        "crit"
+      ]
+    },
+    {
+      "id": "boots_froststride",
+      "name": "Froststride Sandals",
+      "slot": "boots",
+      "baseStats": {
+        "haste": 6,
+        "critChance": 0.02
+      },
+      "tags": [
+        "mystic",
+        "frost"
+      ],
+      "allowedAffixTags": [
+        "frost",
+        "haste",
+        "barrier"
+      ]
+    },
+    {
+      "id": "boots_ranger_treads",
+      "name": "Ranger Treads",
+      "slot": "boots",
+      "baseStats": {
+        "haste": 7,
+        "atk": 1
+      },
+      "tags": [
+        "hunter",
+        "bow"
+      ],
+      "allowedAffixTags": [
+        "haste",
+        "crit",
+        "atk"
+      ]
+    },
+    {
+      "id": "ring_guard",
+      "name": "Guard Ring",
+      "slot": "ring",
+      "baseStats": {
+        "def": 3
+      },
+      "tags": [
+        "warden"
+      ],
+      "allowedAffixTags": [
+        "def",
+        "hp",
+        "barrier"
+      ]
+    },
+    {
+      "id": "ring_spite",
+      "name": "Ring of Spite",
+      "slot": "ring",
+      "baseStats": {},
+      "tags": [
+        "warden",
+        "thorns"
+      ],
+      "allowedAffixTags": [
+        "thorns",
+        "def"
+      ]
+    },
+    {
+      "id": "ring_venom",
+      "name": "Venom Coil",
+      "slot": "ring",
+      "baseStats": {
+        "critChance": 0.03
+      },
+      "tags": [
+        "rogue",
+        "poison"
+      ],
+      "allowedAffixTags": [
+        "poison",
+        "crit",
+        "haste"
+      ]
+    },
+    {
+      "id": "ring_precision",
+      "name": "Precision Band",
+      "slot": "ring",
+      "baseStats": {
+        "critChance": 0.04
+      },
+      "tags": [
+        "hunter",
+        "crit"
+      ],
+      "allowedAffixTags": [
+        "crit",
+        "atk"
+      ]
+    },
+    {
+      "id": "ring_frostbite",
+      "name": "Frostbite Ring",
+      "slot": "ring",
+      "baseStats": {
+        "haste": 3
+      },
+      "tags": [
+        "mystic",
+        "frost"
+      ],
+      "allowedAffixTags": [
+        "frost",
+        "haste"
+      ]
+    },
+    {
+      "id": "ring_bulwark",
+      "name": "Bulwark Loop",
+      "slot": "ring",
+      "baseStats": {
+        "maxHp": 8
+      },
+      "tags": [
+        "barrier"
+      ],
+      "allowedAffixTags": [
+        "barrier",
+        "hp",
+        "def"
+      ]
+    },
+    {
+      "id": "ring_bloodletting",
+      "name": "Bloodletting Ring",
+      "slot": "ring",
+      "baseStats": {
+        "atk": 2
+      },
+      "tags": [
+        "bleed",
+        "physical"
+      ],
+      "allowedAffixTags": [
+        "bleed",
+        "atk",
+        "crit"
+      ]
+    },
+    {
+      "id": "ring_sage",
+      "name": "Sage Ring",
+      "slot": "ring",
+      "baseStats": {
+        "maxHp": 6,
+        "haste": 2
+      },
+      "tags": [
+        "mystic",
+        "control"
+      ],
+      "allowedAffixTags": [
+        "frost",
+        "barrier",
+        "haste"
+      ]
+    },
+    {
+      "id": "amulet_warding",
+      "name": "Warding Charm",
+      "slot": "amulet",
+      "baseStats": {
+        "maxHp": 10,
+        "def": 2
+      },
+      "tags": [
+        "warden",
+        "barrier"
+      ],
+      "allowedAffixTags": [
+        "barrier",
+        "def",
+        "hp"
+      ]
+    },
+    {
+      "id": "amulet_serpent",
+      "name": "Serpent Fang",
+      "slot": "amulet",
+      "baseStats": {
+        "atk": 2,
+        "haste": 3
+      },
+      "tags": [
+        "rogue",
+        "poison"
+      ],
+      "allowedAffixTags": [
+        "poison",
+        "crit",
+        "haste"
+      ]
+    },
+    {
+      "id": "amulet_iceheart",
+      "name": "Iceheart Pendant",
+      "slot": "amulet",
+      "baseStats": {
+        "critChance": 0.03,
+        "haste": 2
+      },
+      "tags": [
+        "mystic",
+        "frost"
+      ],
+      "allowedAffixTags": [
+        "frost",
+        "barrier",
+        "haste"
+      ]
+    },
+    {
+      "id": "amulet_deadeye",
+      "name": "Deadeye Locket",
+      "slot": "amulet",
+      "baseStats": {
+        "critChance": 0.05
+      },
+      "tags": [
+        "hunter",
+        "crit"
+      ],
+      "allowedAffixTags": [
+        "crit",
+        "atk"
+      ]
+    },
+    {
+      "id": "amulet_reaver",
+      "name": "Reaver Totem",
+      "slot": "amulet",
+      "baseStats": {
+        "atk": 3
+      },
+      "tags": [
+        "melee",
+        "bleed"
+      ],
+      "allowedAffixTags": [
+        "bleed",
+        "atk",
+        "def"
+      ]
+    },
+    {
+      "id": "amulet_quicksilver",
+      "name": "Quicksilver Sigil",
+      "slot": "amulet",
+      "baseStats": {
+        "haste": 5
+      },
+      "tags": [
+        "control",
+        "ranged"
+      ],
+      "allowedAffixTags": [
+        "haste",
+        "crit",
+        "frost"
+      ]
+    },
+    {
+      "id": "relic_bramble_idol",
+      "name": "Bramble Idol",
+      "slot": "relic",
+      "baseStats": {
+        "def": 2,
+        "maxHp": 8
+      },
+      "tags": [
+        "warden",
+        "thorns",
+        "barrier"
+      ],
+      "allowedAffixTags": [
+        "thorns",
+        "barrier",
+        "def"
+      ]
+    },
+    {
+      "id": "relic_viper_fetish",
+      "name": "Viper Fetish",
+      "slot": "relic",
+      "baseStats": {
+        "atk": 2,
+        "haste": 2
+      },
+      "tags": [
+        "rogue",
+        "poison"
+      ],
+      "allowedAffixTags": [
+        "poison",
+        "crit",
+        "haste"
+      ]
+    },
+    {
+      "id": "relic_winter_orb",
+      "name": "Winter Orb",
+      "slot": "relic",
+      "baseStats": {
+        "haste": 3,
+        "maxHp": 6
+      },
+      "tags": [
+        "mystic",
+        "frost",
+        "control"
+      ],
+      "allowedAffixTags": [
+        "frost",
+        "barrier",
+        "haste"
+      ]
+    },
+    {
+      "id": "relic_eagle_talon",
+      "name": "Eagle Talon",
+      "slot": "relic",
+      "baseStats": {
+        "atk": 2,
+        "critChance": 0.03
+      },
+      "tags": [
+        "hunter",
+        "crit",
+        "bow"
+      ],
+      "allowedAffixTags": [
+        "crit",
+        "atk",
+        "haste"
+      ]
+    },
+    {
+      "id": "relic_ember_core",
+      "name": "Ember Core",
+      "slot": "relic",
+      "baseStats": {
+        "atk": 2
+      },
+      "tags": [
+        "mystic",
+        "fire",
+        "burn"
+      ],
+      "allowedAffixTags": [
+        "fire",
+        "burn",
+        "haste"
+      ]
+    }
+  ],
+  "legendaries": [
+    {
+      "id": "legend_briarwall",
+      "baseId": "weapon_bastion_mace",
+      "name": "Briarwall",
+      "slot": "weapon",
+      "tags": [
+        "warden",
+        "thorns",
+        "barrier"
+      ],
+      "finalStats": {
+        "atk": 14,
+        "def": 8,
+        "maxHp": 30
+      }
+    },
+    {
+      "id": "legend_venomkiss",
+      "baseId": "weapon_venom_dagger",
+      "name": "Venomkiss",
+      "slot": "weapon",
+      "tags": [
+        "rogue",
+        "poison",
+        "crit"
+      ],
+      "finalStats": {
+        "atk": 14,
+        "haste": 12,
+        "critChance": 0.1
+      }
+    },
+    {
+      "id": "legend_rimecaller",
+      "baseId": "weapon_glacier_staff",
+      "name": "Rimecaller",
+      "slot": "weapon",
+      "tags": [
+        "mystic",
+        "frost",
+        "control"
+      ],
+      "finalStats": {
+        "atk": 13,
+        "haste": 10,
+        "critChance": 0.08
+      }
+    },
+    {
+      "id": "legend_skyrend",
+      "baseId": "weapon_hunter_bow",
+      "name": "Skyrend",
+      "slot": "weapon",
+      "tags": [
+        "hunter",
+        "crit",
+        "bow"
+      ],
+      "finalStats": {
+        "atk": 16,
+        "critChance": 0.12,
+        "critMultiplier": 0.35
+      }
+    },
+    {
+      "id": "legend_emberwake_staff",
+      "baseId": "weapon_firebrand_staff",
+      "name": "Emberwake Staff",
+      "slot": "weapon",
+      "tags": [
+        "mystic",
+        "fire",
+        "burn"
+      ],
+      "finalStats": {
+        "atk": 15,
+        "haste": 8
+      }
+    },
+    {
+      "id": "legend_living_bastion",
+      "baseId": "offhand_kite_shield",
+      "name": "Living Bastion",
+      "slot": "offhand",
+      "tags": [
+        "warden",
+        "barrier"
+      ],
+      "finalStats": {
+        "def": 12,
+        "maxHp": 40
+      }
+    },
+    {
+      "id": "legend_plagueband",
+      "baseId": "ring_venom",
+      "name": "Plagueband",
+      "slot": "ring",
+      "tags": [
+        "rogue",
+        "poison"
+      ],
+      "finalStats": {
+        "atk": 5,
+        "critChance": 0.08,
+        "haste": 7
+      }
+    },
+    {
+      "id": "legend_shard_of_winter",
+      "baseId": "relic_winter_orb",
+      "name": "Shard of Winter",
+      "slot": "relic",
+      "tags": [
+        "mystic",
+        "frost"
+      ],
+      "finalStats": {
+        "haste": 10,
+        "maxHp": 20
+      }
+    }
+  ],
+  "sets": [
+    {
+      "id": "set_thornbound",
+      "name": "Thornbound Aegis",
+      "pieces": [
+        "weapon_bastion_mace",
+        "offhand_spike_buckler",
+        "armor_bastion_plate"
+      ],
+      "bonuses": [
+        {
+          "pieces": 2,
+          "stats": {
+            "def": 6
+          }
+        },
+        {
+          "pieces": 3,
+          "stats": {
+            "maxHp": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "set_venomrunner",
+      "name": "Venomrunner",
+      "pieces": [
+        "weapon_venom_dagger",
+        "boots_shadowstep",
+        "amulet_serpent"
+      ],
+      "bonuses": [
+        {
+          "pieces": 2,
+          "stats": {
+            "haste": 6
+          }
+        },
+        {
+          "pieces": 3,
+          "stats": {
+            "atk": 6,
+            "critChance": 0.05
+          }
+        }
+      ]
+    },
+    {
+      "id": "set_frostweave",
+      "name": "Frostweave",
+      "pieces": [
+        "weapon_glacier_staff",
+        "armor_glacial_robes",
+        "relic_winter_orb"
+      ],
+      "bonuses": [
+        {
+          "pieces": 2,
+          "stats": {
+            "haste": 5
+          }
+        },
+        {
+          "pieces": 3,
+          "stats": {
+            "maxHp": 20,
+            "critChance": 0.05
+          }
+        }
+      ]
+    }
+  ]
+}
