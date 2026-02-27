@@ -120,6 +120,21 @@ const createInitialState = (): SaveData => {
   }
 }
 
+const ENCOUNTER_ID_MIGRATION: Record<string, string> = {
+  street_scavenger_pack: 'enc_standard_scrap_lane',
+  warehouse_enforcer: 'enc_elite_reaver_line',
+  alley_hunters: 'enc_standard_plague_den',
+  broken_rotor_swarm: 'enc_standard_frozen_watch',
+  night_market_duelists: 'enc_elite_venom_host',
+}
+
+const migrateMapNode = (node: MapNode): MapNode => {
+  if (node.encounterId && ENCOUNTER_ID_MIGRATION[node.encounterId]) {
+    return { ...node, encounterId: ENCOUNTER_ID_MIGRATION[node.encounterId] }
+  }
+  return node
+}
+
 const normalizeState = (saveData: SaveData | null): SaveData => {
   if (!saveData) return createInitialState()
 
@@ -133,6 +148,7 @@ const normalizeState = (saveData: SaveData | null): SaveData => {
   return {
     ...saveData,
     hero: applyProgressionLayer({ ...saveData.hero, equippedItems: saveData.equippedItems }, rawProgression),
+    mapState: saveData.mapState.map(migrateMapNode),
     progression: {
       level: rawProgression.level,
       xp: rawProgression.xp,
@@ -255,14 +271,18 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
     const node = selectedNode
     if (!node || !node.encounterId || node.state !== 'available') return null
 
-    const encounter = resolveEncounterTemplate(node.encounterId)
-    return {
-      node,
-      danger: calcDangerRating(state.hero, encounter, 40),
-      encounterName: encounter.name ?? node.id,
-      encounterContext: encounter.enemies.context,
-      encounterType: encounter.type,
-      enemies: encounter.enemies.enemies,
+    try {
+      const encounter = resolveEncounterTemplate(node.encounterId)
+      return {
+        node,
+        danger: calcDangerRating(state.hero, encounter, 40),
+        encounterName: encounter.name ?? node.id,
+        encounterContext: encounter.enemies.context,
+        encounterType: encounter.type,
+        enemies: encounter.enemies.enemies,
+      }
+    } catch {
+      return null
     }
   }, [selectedNode, state.hero])
 
