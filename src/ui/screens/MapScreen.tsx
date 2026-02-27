@@ -109,13 +109,6 @@ export const MapScreen = () => {
             onClick={() => {
               if (node.state !== 'available') return
               selectMapNode(node.id)
-              if (playerMode === 'dev') {
-                if (node.encounterId || node.type.includes('chest') || node.type === 'shrine') {
-                  navigate('/encounter')
-                }
-                return
-              }
-              if (!node.encounterId) return
               navigate('/encounter')
             }}
             aria-label={node.id}
