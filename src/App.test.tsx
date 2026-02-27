@@ -31,7 +31,7 @@ describe('App shell routing', () => {
     expect(screen.getByText('Tap a node to inspect risk and rewards.')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('link', { name: '⚔️Encounter' }))
-    expect(screen.getByText('Select an available fight node from the map first.')).toBeInTheDocument()
+    expect(screen.getByText('Select a node from the map to begin.')).toBeInTheDocument()
   })
 
 
@@ -62,11 +62,11 @@ describe('App shell routing', () => {
     expect(screen.getByText('Dev Mode: bypass traversal and trigger node interactions directly.')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'node_4' }))
-    expect(screen.getByRole('heading', { name: 'Encounter Preview' })).toBeInTheDocument()
-    expect(screen.getByText('Node type: common_chest')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Chest' })).toBeInTheDocument()
+    expect(screen.getByText('Salvage Cache')).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Force Resolve' }))
-    expect(screen.getByText(/Force Resolve complete/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Open Chest' }))
+    expect(screen.getByText('Chest Opened')).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('link', { name: '🗺️Map' }))
     fireEvent.click(screen.getByRole('button', { name: 'Regenerate local map nodes' }))

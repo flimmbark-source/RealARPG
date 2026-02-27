@@ -43,6 +43,18 @@ export const getChestDefinitions = (): ChestDefinition[] => encounterTable.chest
 
 export const getShrineDefinitions = (): ShrineDefinition[] => encounterTable.shrines
 
+export const getChestDefinition = (chestType: ChestDefinition['type']): ChestDefinition => {
+  const def = encounterTable.chests.find((c) => c.type === chestType)
+  if (!def) return encounterTable.chests[0]
+  return def
+}
+
+export const getShrineDefinition = (shrineType: ShrineDefinition['type']): ShrineDefinition => {
+  const def = encounterTable.shrines.find((s) => s.type === shrineType)
+  if (!def) return encounterTable.shrines[0]
+  return def
+}
+
 export const resolveEncounterTemplate = (templateId: string): Encounter => {
   const template = encounterTable.encounters.find((entry) => entry.id === templateId)
   if (!template) {
