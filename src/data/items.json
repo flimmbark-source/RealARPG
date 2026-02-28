@@ -5,7 +5,8 @@
       "name": "Iron Sword",
       "slot": "weapon",
       "baseStats": {
-        "atk": 8
+        "atk": 8,
+        "cooldown": 0
       },
       "tags": [
         "warden",
@@ -26,7 +27,8 @@
       "slot": "weapon",
       "baseStats": {
         "atk": 7,
-        "haste": 6
+        "haste": 6,
+        "cooldown": 0
       },
       "tags": [
         "rogue",
@@ -47,7 +49,8 @@
       "slot": "weapon",
       "baseStats": {
         "atk": 7,
-        "critChance": 0.04
+        "critChance": 0.04,
+        "cooldown": 0
       },
       "tags": [
         "mystic",
@@ -68,7 +71,8 @@
       "slot": "weapon",
       "baseStats": {
         "atk": 9,
-        "critChance": 0.05
+        "critChance": 0.05,
+        "cooldown": 0
       },
       "tags": [
         "hunter",
@@ -89,7 +93,8 @@
       "slot": "weapon",
       "baseStats": {
         "atk": 8,
-        "def": 4
+        "def": 4,
+        "cooldown": 0
       },
       "tags": [
         "warden",
@@ -109,7 +114,8 @@
       "name": "Firebrand Staff",
       "slot": "weapon",
       "baseStats": {
-        "atk": 8
+        "atk": 8,
+        "cooldown": 0
       },
       "tags": [
         "mystic",
@@ -130,7 +136,8 @@
       "slot": "offhand",
       "baseStats": {
         "def": 7,
-        "maxHp": 14
+        "maxHp": 14,
+        "cooldown": 0
       },
       "tags": [
         "warden",
@@ -150,7 +157,8 @@
       "slot": "offhand",
       "baseStats": {
         "def": 5,
-        "atk": 2
+        "atk": 2,
+        "cooldown": 0
       },
       "tags": [
         "warden",
@@ -169,7 +177,8 @@
       "slot": "offhand",
       "baseStats": {
         "haste": 5,
-        "critChance": 0.03
+        "critChance": 0.03,
+        "cooldown": 0
       },
       "tags": [
         "mystic",
@@ -189,7 +198,8 @@
       "slot": "offhand",
       "baseStats": {
         "atk": 3,
-        "critChance": 0.04
+        "critChance": 0.04,
+        "cooldown": 0
       },
       "tags": [
         "hunter",
@@ -208,7 +218,8 @@
       "slot": "armor",
       "baseStats": {
         "def": 12,
-        "maxHp": 24
+        "maxHp": 24,
+        "cooldown": 0
       },
       "tags": [
         "warden",
@@ -227,7 +238,8 @@
       "slot": "armor",
       "baseStats": {
         "def": 7,
-        "haste": 6
+        "haste": 6,
+        "cooldown": 0
       },
       "tags": [
         "rogue",
@@ -246,7 +258,8 @@
       "slot": "armor",
       "baseStats": {
         "def": 8,
-        "maxHp": 16
+        "maxHp": 16,
+        "cooldown": 0
       },
       "tags": [
         "mystic",
@@ -266,7 +279,8 @@
       "slot": "armor",
       "baseStats": {
         "def": 8,
-        "critChance": 0.04
+        "critChance": 0.04,
+        "cooldown": 0
       },
       "tags": [
         "hunter",
@@ -286,7 +300,8 @@
       "slot": "armor",
       "baseStats": {
         "def": 10,
-        "maxHp": 18
+        "maxHp": 18,
+        "cooldown": 0
       },
       "tags": [
         "melee",
@@ -304,7 +319,8 @@
       "slot": "armor",
       "baseStats": {
         "def": 9,
-        "haste": 4
+        "haste": 4,
+        "cooldown": 0
       },
       "tags": [
         "mystic",
@@ -323,7 +339,8 @@
       "slot": "boots",
       "baseStats": {
         "def": 4,
-        "haste": 3
+        "haste": 3,
+        "cooldown": 0
       },
       "tags": [
         "warden",
@@ -341,7 +358,8 @@
       "name": "Shadowstep Boots",
       "slot": "boots",
       "baseStats": {
-        "haste": 8
+        "haste": 8,
+        "cooldown": 0
       },
       "tags": [
         "rogue",
@@ -359,7 +377,8 @@
       "slot": "boots",
       "baseStats": {
         "haste": 6,
-        "critChance": 0.02
+        "critChance": 0.02,
+        "cooldown": 0
       },
       "tags": [
         "mystic",
@@ -377,7 +396,8 @@
       "slot": "boots",
       "baseStats": {
         "haste": 7,
-        "atk": 1
+        "atk": 1,
+        "cooldown": 0
       },
       "tags": [
         "hunter",
@@ -394,7 +414,8 @@
       "name": "Guard Ring",
       "slot": "ring",
       "baseStats": {
-        "def": 3
+        "def": 3,
+        "cooldown": 0
       },
       "tags": [
         "warden"
@@ -409,7 +430,9 @@
       "id": "ring_spite",
       "name": "Ring of Spite",
       "slot": "ring",
-      "baseStats": {},
+      "baseStats": {
+        "cooldown": 0
+      },
       "tags": [
         "warden",
         "thorns"
@@ -424,7 +447,8 @@
       "name": "Venom Coil",
       "slot": "ring",
       "baseStats": {
-        "critChance": 0.03
+        "critChance": 0.03,
+        "cooldown": 0
       },
       "tags": [
         "rogue",
@@ -441,7 +465,8 @@
       "name": "Precision Band",
       "slot": "ring",
       "baseStats": {
-        "critChance": 0.04
+        "critChance": 0.04,
+        "cooldown": 0
       },
       "tags": [
         "hunter",
@@ -457,7 +482,8 @@
       "name": "Frostbite Ring",
       "slot": "ring",
       "baseStats": {
-        "haste": 3
+        "haste": 3,
+        "cooldown": 0
       },
       "tags": [
         "mystic",
@@ -473,7 +499,8 @@
       "name": "Bulwark Loop",
       "slot": "ring",
       "baseStats": {
-        "maxHp": 8
+        "maxHp": 8,
+        "cooldown": 0
       },
       "tags": [
         "barrier"
@@ -489,7 +516,8 @@
       "name": "Bloodletting Ring",
       "slot": "ring",
       "baseStats": {
-        "atk": 2
+        "atk": 2,
+        "cooldown": 0
       },
       "tags": [
         "bleed",
@@ -507,7 +535,8 @@
       "slot": "ring",
       "baseStats": {
         "maxHp": 6,
-        "haste": 2
+        "haste": 2,
+        "cooldown": 0
       },
       "tags": [
         "mystic",
@@ -525,7 +554,8 @@
       "slot": "amulet",
       "baseStats": {
         "maxHp": 10,
-        "def": 2
+        "def": 2,
+        "cooldown": 0
       },
       "tags": [
         "warden",
@@ -543,7 +573,8 @@
       "slot": "amulet",
       "baseStats": {
         "atk": 2,
-        "haste": 3
+        "haste": 3,
+        "cooldown": 0
       },
       "tags": [
         "rogue",
@@ -561,7 +592,8 @@
       "slot": "amulet",
       "baseStats": {
         "critChance": 0.03,
-        "haste": 2
+        "haste": 2,
+        "cooldown": 0
       },
       "tags": [
         "mystic",
@@ -578,7 +610,8 @@
       "name": "Deadeye Locket",
       "slot": "amulet",
       "baseStats": {
-        "critChance": 0.05
+        "critChance": 0.05,
+        "cooldown": 0
       },
       "tags": [
         "hunter",
@@ -594,7 +627,8 @@
       "name": "Reaver Totem",
       "slot": "amulet",
       "baseStats": {
-        "atk": 3
+        "atk": 3,
+        "cooldown": 0
       },
       "tags": [
         "melee",
@@ -611,7 +645,8 @@
       "name": "Quicksilver Sigil",
       "slot": "amulet",
       "baseStats": {
-        "haste": 5
+        "haste": 5,
+        "cooldown": 0
       },
       "tags": [
         "control",
@@ -629,7 +664,8 @@
       "slot": "relic",
       "baseStats": {
         "def": 2,
-        "maxHp": 8
+        "maxHp": 8,
+        "cooldown": 0
       },
       "tags": [
         "warden",
@@ -648,7 +684,8 @@
       "slot": "relic",
       "baseStats": {
         "atk": 2,
-        "haste": 2
+        "haste": 2,
+        "cooldown": 0
       },
       "tags": [
         "rogue",
@@ -666,7 +703,8 @@
       "slot": "relic",
       "baseStats": {
         "haste": 3,
-        "maxHp": 6
+        "maxHp": 6,
+        "cooldown": 0
       },
       "tags": [
         "mystic",
@@ -685,7 +723,8 @@
       "slot": "relic",
       "baseStats": {
         "atk": 2,
-        "critChance": 0.03
+        "critChance": 0.03,
+        "cooldown": 0
       },
       "tags": [
         "hunter",
@@ -703,7 +742,8 @@
       "name": "Ember Core",
       "slot": "relic",
       "baseStats": {
-        "atk": 2
+        "atk": 2,
+        "cooldown": 0
       },
       "tags": [
         "mystic",
@@ -731,7 +771,8 @@
       "finalStats": {
         "atk": 14,
         "def": 8,
-        "maxHp": 30
+        "maxHp": 30,
+        "cooldown": 0
       }
     },
     {
@@ -747,7 +788,8 @@
       "finalStats": {
         "atk": 14,
         "haste": 12,
-        "critChance": 0.1
+        "critChance": 0.1,
+        "cooldown": 0
       }
     },
     {
@@ -763,7 +805,8 @@
       "finalStats": {
         "atk": 13,
         "haste": 10,
-        "critChance": 0.08
+        "critChance": 0.08,
+        "cooldown": 0
       }
     },
     {
@@ -779,7 +822,8 @@
       "finalStats": {
         "atk": 16,
         "critChance": 0.12,
-        "critMultiplier": 0.35
+        "critMultiplier": 0.35,
+        "cooldown": 0
       }
     },
     {
@@ -794,7 +838,8 @@
       ],
       "finalStats": {
         "atk": 15,
-        "haste": 8
+        "haste": 8,
+        "cooldown": 0
       }
     },
     {
@@ -808,7 +853,8 @@
       ],
       "finalStats": {
         "def": 12,
-        "maxHp": 40
+        "maxHp": 40,
+        "cooldown": 0
       }
     },
     {
@@ -823,7 +869,8 @@
       "finalStats": {
         "atk": 5,
         "critChance": 0.08,
-        "haste": 7
+        "haste": 7,
+        "cooldown": 0
       }
     },
     {
@@ -837,7 +884,8 @@
       ],
       "finalStats": {
         "haste": 10,
-        "maxHp": 20
+        "maxHp": 20,
+        "cooldown": 0
       }
     }
   ],

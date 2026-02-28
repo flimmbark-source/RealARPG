@@ -21,6 +21,7 @@ export type StatKey =
   | 'maxHp'
   | 'atk'
   | 'def'
+  | 'cooldown'
   | 'critChance'
   | 'critMultiplier'
   | 'haste'
