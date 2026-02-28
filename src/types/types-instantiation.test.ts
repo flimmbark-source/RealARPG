@@ -26,7 +26,7 @@ describe('phase 0 type instantiation', () => {
       id: 'base_sword_01',
       name: 'Iron Sword',
       slot: ItemSlot.Weapon,
-      baseStats: { atk: 4 },
+      baseStats: { atk: 4, cooldown: 0 },
       tags: ['melee', 'physical'],
       allowedAffixTags: ['crit', 'bleed'],
     }
@@ -51,7 +51,7 @@ describe('phase 0 type instantiation', () => {
       slot: itemBase.slot,
       rarity: Rarity.Magic,
       affixes: [{ affixId: affix.id, stat: affix.stat, value: 2 }],
-      finalStats: { atk: 6 },
+      finalStats: { atk: 6, cooldown: 0 },
       isLegendary: false,
       tags: ['melee', 'physical'],
       seed: 42,

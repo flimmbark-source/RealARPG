@@ -18,6 +18,7 @@ describe('loot engine', () => {
 
       expect(first).toEqual(second)
       expect(first.affixes.length).toBeGreaterThanOrEqual(rarity === Rarity.Common ? 0 : 1)
+      expect(first.finalStats.cooldown).toBeTypeOf('number')
       for (const affix of first.affixes) {
         expect(base.allowedAffixTags.some((tag) => first.tags.includes(tag) || tag)).toBeTruthy()
         expect(affix.value).toBeTypeOf('number')
