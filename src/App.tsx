@@ -1,6 +1,7 @@
 import { Navigate, NavLink, Route, Routes } from 'react-router-dom'
 
 import { GameStateProvider } from './ui/GameStateContext'
+import { BattleScreen } from './ui/screens/BattleScreen'
 import { CombatTestScreen } from './ui/screens/CombatTestScreen'
 import { EncounterScreen } from './ui/screens/EncounterScreen'
 import { FeedScreen } from './ui/screens/FeedScreen'
@@ -29,6 +30,7 @@ function App() {
             <Route path="/home" element={<HomeScreen />} />
             <Route path="/map" element={<MapScreen />} />
             <Route path="/encounter" element={<EncounterScreen />} />
+            <Route path="/battle" element={<BattleScreen />} />
             <Route path="/inventory" element={<InventoryScreen />} />
             <Route path="/feed" element={<FeedScreen />} />
             <Route path="/combat-test" element={<CombatTestScreen />} />

@@ -1,4 +1,5 @@
 export type BattleEventType =
+  | 'battle_start'
   | 'attack'
   | 'crit'
   | 'status_apply'
@@ -8,6 +9,7 @@ export type BattleEventType =
   | 'thorns_reflect'
   | 'kill'
   | 'hero_death'
+  | 'battle_end'
 
 export interface BattleEvent {
   timestamp: number

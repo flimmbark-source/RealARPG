@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import { useGameState, type NodeInteractionResult } from '../GameStateContext'
 
@@ -263,6 +263,7 @@ function useShrinePreview(shrineType?: string) {
 export const EncounterScreen = () => {
   const { playerMode, selectedNode, selectedEncounter, resolveSelectedNode } = useGameState()
   const [result, setResult] = useState<NodeInteractionResult | null>(null)
+  const navigate = useNavigate()
   const isDevMode = playerMode === 'dev'
 
   // No node selected and no result to show
@@ -293,7 +294,15 @@ export const EncounterScreen = () => {
     )
   }
 
-  const handleResolve = () => {
+  const handleCombatEngage = () => {
+    const outcome = resolveSelectedNode()
+    if (outcome && outcome.kind === 'combat') {
+      // Navigate to the battle screen for real-time playback
+      navigate('/battle')
+    }
+  }
+
+  const handleNonCombatResolve = () => {
     const outcome = resolveSelectedNode()
     if (outcome) setResult(outcome)
   }
@@ -321,10 +330,9 @@ export const EncounterScreen = () => {
         )}
       </div>
 
-      {/* Result view (after interaction) */}
+      {/* Result view (after non-combat interaction) */}
       {result ? (
         <div className="space-y-3">
-          {result.kind === 'combat' && <CombatResultView result={result} />}
           {result.kind === 'chest' && <ChestResultView result={result} />}
           {result.kind === 'shrine' && <ShrineResultView result={result} />}
 
@@ -339,13 +347,13 @@ export const EncounterScreen = () => {
         /* Preview view (before interaction) */
         <div>
           {isCombatNode && selectedEncounter && (
-            <CombatPreview isDevMode={isDevMode} onEngage={handleResolve} />
+            <CombatPreview isDevMode={isDevMode} onEngage={handleCombatEngage} />
           )}
           {isShrineNode && (
-            <ShrinePreview node={selectedNode} onActivate={handleResolve} />
+            <ShrinePreview node={selectedNode} onActivate={handleNonCombatResolve} />
           )}
           {isChestNode && (
-            <ChestPreview node={selectedNode} onOpen={handleResolve} />
+            <ChestPreview node={selectedNode} onOpen={handleNonCombatResolve} />
           )}
 
           {/* Fallback for unexpected node types */}

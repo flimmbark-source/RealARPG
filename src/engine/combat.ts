@@ -287,6 +287,15 @@ export const simulateBattle = (heroInput: HeroState, enemiesInput: Enemy[], seed
   let damageTaken = 0
   let loopCount = 0
 
+  emit(events, {
+    timestamp: 0,
+    source: 'system',
+    target: 'system',
+    type: 'battle_start',
+    value: enemies.length,
+    tags: [],
+  })
+
   if (hero.openerBonus > 0) {
     emit(events, {
       timestamp: 0,
@@ -393,6 +402,15 @@ export const simulateBattle = (heroInput: HeroState, enemiesInput: Enemy[], seed
   }
 
   const winner = hero.alive && livingEnemies(enemies).length === 0 ? 'hero' : 'enemies'
+
+  emit(events, {
+    timestamp: now,
+    source: 'system',
+    target: 'system',
+    type: 'battle_end',
+    value: winner === 'hero' ? 1 : 0,
+    tags: [winner],
+  })
 
   return {
     winner,

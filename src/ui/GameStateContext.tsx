@@ -42,6 +42,16 @@ export type NodeInteractionResult =
       buffApplied: boolean
     }
 
+export interface PendingBattle {
+  battle: BattleResult
+  loot: Item[]
+  encounterName: string
+  encounterType: 'standard' | 'elite'
+  enemies: Enemy[]
+  heroSnapshot: HeroState
+  xpGained: number
+}
+
 interface GameStateContextValue {
   state: SaveData
   mapNodes: MapNode[]
@@ -50,6 +60,7 @@ interface GameStateContextValue {
   selectedNode: MapNode | null
   selectedNodeId: string | null
   selectedEncounter: EncounterPreviewState | null
+  pendingBattle: PendingBattle | null
   canAddInventoryItem: boolean
   playerMode: PlayerMode
   devEncounterFilters: DevEncounterFilter
@@ -64,6 +75,7 @@ interface GameStateContextValue {
   unequipItem: (slot: ItemSlot) => void
   setLifeSlider: (stat: keyof ProgressionState['lifeStats'], value: number) => void
   resolveSelectedNode: () => NodeInteractionResult | null
+  clearPendingBattle: () => void
   getItemComparison: (candidate: Item) => ReturnType<typeof compareItems>
 }
 
@@ -168,6 +180,7 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
   const [playerMode, setPlayerMode] = useState<PlayerMode>('active')
   const [devPlayerPosition, setDevPlayerPosition] = useState({ x: 50, y: 50 })
+  const [pendingBattle, setPendingBattle] = useState<PendingBattle | null>(null)
   const [devEncounterFilters, setDevEncounterFilters] = useState<DevEncounterFilter>({
     standard_fight: true,
     elite_fight: true,
@@ -186,6 +199,7 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   const clearSelectedNode = useCallback(() => setSelectedNodeId(null), [])
+  const clearPendingBattle = useCallback(() => setPendingBattle(null), [])
 
   const equipItem = useCallback((itemId: string) => {
     setState((current) => {
@@ -319,6 +333,16 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
           xpGained: xpReward,
         }
 
+        setPendingBattle({
+          battle: result,
+          loot: lootToAdd,
+          encounterName: encounter.name ?? node.id,
+          encounterType: encounter.type,
+          enemies: encounter.enemies.enemies,
+          heroSnapshot: current.hero,
+          xpGained: xpReward,
+        })
+
         let feedEntries = addFeedEntry(current.feedEntries, {
           type: result.winner === 'hero' ? 'fight_won' : 'fight_lost',
           summary:
@@ -425,6 +449,7 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
       selectedNode,
       selectedNodeId,
       selectedEncounter,
+      pendingBattle,
       canAddInventoryItem: state.inventory.length < INVENTORY_CAP,
       playerMode,
       devEncounterFilters,
@@ -439,14 +464,17 @@ export const GameStateProvider = ({ children }: { children: ReactNode }) => {
       unequipItem,
       setLifeSlider,
       resolveSelectedNode,
+      clearPendingBattle,
       getItemComparison,
     }),
     [
       devEncounterFilters,
       devPlayerPosition,
       clearSelectedNode,
+      clearPendingBattle,
       equipItem,
       getItemComparison,
+      pendingBattle,
       playerMode,
       regenerateMapNodes,
       resolveSelectedNode,
