@@ -517,26 +517,25 @@ const ItemActionBar = ({
         return (
           <div
             key={slot}
-            className={`relative flex min-w-[56px] flex-col items-center rounded-lg border-2 p-1.5 text-center transition-all duration-150 ${
+            className={`relative flex min-w-[56px] flex-col items-center overflow-hidden rounded-lg border-2 p-1.5 text-center transition-all duration-150 ${
               justFired
                 ? 'border-yellow-400 bg-yellow-50 scale-105'
                 : `${RARITY_BORDER[item.rarity] ?? 'border-slate-300'} bg-white`
             }`}
           >
-            <span className="text-base">{SLOT_ICONS[slot] ?? '?'}</span>
-            <p className="mt-0.5 max-w-[52px] truncate text-[9px] font-medium leading-tight">
+            {isWeapon && (
+              <div
+                className={`pointer-events-none absolute inset-x-0 bottom-0 z-0 transition-all duration-100 ${cooldownPct >= 1 ? 'bg-emerald-200' : 'bg-sky-200'}`}
+                style={{ height: `${cooldownPct * 100}%` }}
+                aria-hidden="true"
+              />
+            )}
+            <span className="relative z-10 text-base">{SLOT_ICONS[slot] ?? '?'}</span>
+            <p className="relative z-10 mt-0.5 max-w-[52px] truncate text-[9px] font-medium leading-tight">
               {item.name}
             </p>
-            {isWeapon && (
-              <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className={`h-full rounded-full transition-all duration-100 ${cooldownPct >= 1 ? 'bg-emerald-500' : 'bg-sky-400'}`}
-                  style={{ width: `${cooldownPct * 100}%` }}
-                />
-              </div>
-            )}
             {getTagIcon(item.tags) && (
-              <span className="absolute -right-1 -top-1 text-[10px]">
+              <span className="absolute -right-1 -top-1 z-10 text-[10px]">
                 {getTagIcon(item.tags)}
               </span>
             )}
