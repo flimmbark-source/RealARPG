@@ -57,11 +57,27 @@ const EFFECT_ICONS: Record<string, string> = {
 }
 
 const RARITY_BORDER: Record<string, string> = {
-  Common: 'border-slate-300',
-  Magic: 'border-blue-400',
-  Rare: 'border-yellow-400',
-  Epic: 'border-purple-400',
-  Legendary: 'border-orange-400',
+  Common: 'border-slate-400',
+  Magic: 'border-blue-500',
+  Rare: 'border-yellow-500',
+  Epic: 'border-purple-500',
+  Legendary: 'border-orange-500',
+}
+
+const RARITY_GLOW: Record<string, string> = {
+  Common: 'shadow-slate-300/40',
+  Magic: 'shadow-blue-400/50',
+  Rare: 'shadow-yellow-400/60',
+  Epic: 'shadow-purple-400/60',
+  Legendary: 'shadow-orange-400/70',
+}
+
+const RARITY_READY_RING: Record<string, string> = {
+  Common: 'ring-slate-300',
+  Magic: 'ring-blue-400',
+  Rare: 'ring-yellow-400',
+  Epic: 'ring-purple-400',
+  Legendary: 'ring-orange-400',
 }
 
 function getEnemyVisual(enemyId: string): { icon: string; bg: string } {
@@ -74,6 +90,109 @@ function getTagIcon(tags: string[]): string {
     if (TAG_ICONS[tag]) return TAG_ICONS[tag]
   }
   return '⚔️'
+}
+
+function getStatLabels(item: Item): string[] {
+  const labels: string[] = []
+  const s = item.finalStats
+  if (s.atk) labels.push(`+${s.atk} ATK`)
+  if (s.def) labels.push(`+${s.def} DEF`)
+  if (s.maxHp) labels.push(`+${s.maxHp} HP`)
+  if (s.critChance) labels.push(`+${Math.round(s.critChance * 100)}% CRT`)
+  if (s.critMultiplier && s.critMultiplier > 0) labels.push(`x${s.critMultiplier.toFixed(1)}`)
+  if (s.haste) labels.push(`+${s.haste} SPD`)
+  if (s.cooldown && s.cooldown < 0) labels.push(`${s.cooldown}s CD`)
+  return labels.slice(0, 2)
+}
+
+// ---------------------------------------------------------------------------
+// Item activation detection – maps battle events to equipped item slots
+// ---------------------------------------------------------------------------
+
+function getActivatedSlots(
+  ev: BattleEvent,
+  equippedItems: Partial<Record<string, Item>>,
+): string[] {
+  const activated: string[] = []
+  const items = Object.entries(equippedItems).filter(
+    ([, item]) => item != null,
+  ) as [string, Item][]
+
+  switch (ev.type) {
+    case 'attack': {
+      if (ev.source === 'hero') {
+        if (equippedItems.weapon) activated.push('weapon')
+        for (const [slot, item] of items) {
+          if (slot !== 'weapon' && item.finalStats.atk && item.finalStats.atk > 0) {
+            activated.push(slot)
+          }
+        }
+      } else if (ev.target === 'hero') {
+        for (const [slot, item] of items) {
+          if (item.finalStats.def && item.finalStats.def > 0) {
+            activated.push(slot)
+          }
+        }
+      }
+      break
+    }
+    case 'crit': {
+      if (ev.source === 'hero') {
+        for (const [slot, item] of items) {
+          if (item.finalStats.critChance || item.finalStats.critMultiplier) {
+            activated.push(slot)
+          }
+        }
+      }
+      break
+    }
+    case 'barrier_absorb': {
+      if (ev.target === 'hero') {
+        for (const [slot, item] of items) {
+          if (item.finalStats.def || item.tags.includes('barrier')) {
+            activated.push(slot)
+          }
+        }
+      }
+      break
+    }
+    case 'thorns_reflect': {
+      for (const [slot, item] of items) {
+        if (item.tags.includes('thorns')) {
+          activated.push(slot)
+        }
+      }
+      break
+    }
+    case 'status_apply': {
+      if (ev.source === 'hero') {
+        for (const [slot, item] of items) {
+          if (ev.tags.some((t) => item.tags.includes(t))) {
+            activated.push(slot)
+          }
+        }
+      }
+      break
+    }
+  }
+
+  return [...new Set(activated)]
+}
+
+function deriveItemActivations(
+  recentEvents: BattleEvent[],
+  equippedItems: Partial<Record<string, Item>>,
+): Record<string, number> {
+  const activations: Record<string, number> = {}
+  for (const ev of recentEvents) {
+    const slots = getActivatedSlots(ev, equippedItems)
+    for (const slot of slots) {
+      if (!activations[slot] || ev.timestamp > activations[slot]) {
+        activations[slot] = ev.timestamp
+      }
+    }
+  }
+  return activations
 }
 
 // ---------------------------------------------------------------------------
@@ -152,7 +271,6 @@ function advancePlayback(
     idx++
   }
 
-  // Keep only the latest 20 events in the feed
   if (newRecent.length > 20) {
     newRecent.splice(0, newRecent.length - 20)
   }
@@ -189,7 +307,6 @@ function applyEventToState(state: PlaybackState, ev: BattleEvent): PlaybackState
       break
     }
     case 'crit': {
-      // Crit is informational - actual damage is applied via the attack event
       break
     }
     case 'barrier_absorb': {
@@ -316,440 +433,6 @@ function useBattlePlayback(battle: BattleResult, hero: HeroState, enemies: Enemy
 }
 
 // ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-const SpeedControls = ({
-  speed,
-  onSetSpeed,
-  paused,
-  onTogglePause,
-  onSkip,
-  finished,
-}: {
-  speed: PlaybackSpeed
-  onSetSpeed: (s: PlaybackSpeed) => void
-  paused: boolean
-  onTogglePause: () => void
-  onSkip: () => void
-  finished: boolean
-}) => (
-  <div className="flex items-center gap-2">
-    {!finished && (
-      <button
-        type="button"
-        className="rounded bg-slate-700 px-2 py-1 text-xs font-medium text-white"
-        onClick={onTogglePause}
-      >
-        {paused ? '▶' : '⏸'}
-      </button>
-    )}
-    {([1, 1.5, 2] as const).map((s) => (
-      <button
-        key={s}
-        type="button"
-        className={`rounded px-2 py-1 text-xs font-medium ${speed === s ? 'bg-sky-600 text-white' : 'bg-slate-200 text-slate-700'}`}
-        onClick={() => onSetSpeed(s)}
-      >
-        {s}x
-      </button>
-    ))}
-    {!finished && (
-      <button
-        type="button"
-        className="rounded bg-slate-500 px-2 py-1 text-xs text-white"
-        onClick={onSkip}
-      >
-        Skip
-      </button>
-    )}
-  </div>
-)
-
-const HpBar = ({
-  current,
-  max,
-  color,
-  barrier,
-}: {
-  current: number
-  max: number
-  color: string
-  barrier?: number
-}) => {
-  const pct = Math.max(0, Math.min(100, (current / max) * 100))
-  const barrierPct = barrier ? Math.max(0, Math.min(100 - pct, (barrier / max) * 100)) : 0
-
-  return (
-    <div className="relative h-3 w-full overflow-hidden rounded-full bg-slate-200">
-      <div
-        className={`absolute inset-y-0 left-0 rounded-full transition-all duration-300 ${color}`}
-        style={{ width: `${pct}%` }}
-      />
-      {barrierPct > 0 && (
-        <div
-          className="absolute inset-y-0 rounded-full bg-cyan-400 opacity-60"
-          style={{ left: `${pct}%`, width: `${barrierPct}%` }}
-        />
-      )}
-      <div className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-800">
-        {Math.round(current)}/{max}
-        {barrier && barrier > 0 ? ` +${Math.round(barrier)}` : ''}
-      </div>
-    </div>
-  )
-}
-
-const StatusBadges = ({ statuses }: { statuses: Array<{ type: string; expiresAt: number }> }) => {
-  if (statuses.length === 0) return null
-  return (
-    <div className="flex gap-1">
-      {statuses.map((s, i) => (
-        <span
-          key={`${s.type}_${i}`}
-          className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] text-white"
-        >
-          {EFFECT_ICONS[s.type] ?? '?'} {s.type}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-const HeroPanel = ({
-  hero,
-  playbackTime,
-}: {
-  hero: CombatantLiveState
-  playbackTime: number
-}) => {
-  const recentlyHit = playbackTime - hero.lastHitAt < 0.4
-  const archetypeLabel = hero.name.split(' ').pop() ?? hero.name
-
-  return (
-    <div
-      className={`flex-1 rounded-lg border-2 p-3 transition-colors duration-200 ${
-        !hero.alive
-          ? 'border-rose-400 bg-rose-50'
-          : recentlyHit
-            ? 'border-red-400 bg-red-50'
-            : 'border-emerald-300 bg-emerald-50'
-      }`}
-    >
-      <div className="mb-1 flex items-center gap-2">
-        <span className="text-xl">🧑‍🦱</span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold">{hero.name}</p>
-          <p className="text-[10px] text-slate-500">{archetypeLabel}</p>
-        </div>
-      </div>
-      <HpBar current={hero.hp} max={hero.maxHp} color="bg-emerald-500" barrier={hero.barrier} />
-      <div className="mt-1">
-        <StatusBadges statuses={hero.statuses} />
-      </div>
-    </div>
-  )
-}
-
-const EnemyCard = ({
-  enemy,
-  playbackTime,
-}: {
-  enemy: CombatantLiveState
-  playbackTime: number
-}) => {
-  const visual = getEnemyVisual(enemy.id)
-  const recentlyHit = playbackTime - enemy.lastHitAt < 0.4
-  const recentlyAttacked = playbackTime - enemy.lastActionAt < 0.5
-
-  return (
-    <div
-      className={`rounded-lg border-2 p-2 transition-colors duration-200 ${
-        !enemy.alive
-          ? 'border-slate-300 bg-slate-100 opacity-50'
-          : recentlyAttacked
-            ? 'border-amber-400 bg-amber-50'
-            : recentlyHit
-              ? 'border-red-400 bg-red-50'
-              : `border-slate-300 ${visual.bg}`
-      }`}
-    >
-      <div className="mb-1 flex items-center gap-1.5">
-        <span className="text-lg">{visual.icon}</span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-semibold">{enemy.name}</p>
-          {!enemy.alive && <p className="text-[10px] font-medium text-rose-600">Defeated</p>}
-        </div>
-      </div>
-      {enemy.alive && (
-        <>
-          <HpBar current={enemy.hp} max={enemy.maxHp} color="bg-rose-500" />
-          <div className="mt-1">
-            <StatusBadges statuses={enemy.statuses} />
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-const ItemActionBar = ({
-  items,
-  heroCooldown,
-  lastAttackAt,
-  playbackTime,
-}: {
-  items: Partial<Record<string, Item>>
-  heroCooldown: number
-  lastAttackAt: number
-  playbackTime: number
-}) => {
-  const slots = Object.entries(items).filter(([, item]) => item != null) as [string, Item][]
-
-  return (
-    <div className="flex gap-1.5 overflow-x-auto py-1">
-      {slots.map(([slot, item]) => {
-        const isWeapon = slot === 'weapon'
-        const elapsed = playbackTime - lastAttackAt
-        const cooldownPct = isWeapon ? Math.min(1, elapsed / heroCooldown) : 1
-        const justFired = isWeapon && elapsed < 0.3 && lastAttackAt >= 0
-
-        return (
-          <div
-            key={slot}
-            className={`relative flex min-w-[56px] flex-col items-center overflow-hidden rounded-lg border-2 p-1.5 text-center transition-all duration-150 ${
-              justFired
-                ? 'border-yellow-400 bg-yellow-50 scale-105'
-                : `${RARITY_BORDER[item.rarity] ?? 'border-slate-300'} bg-white`
-            }`}
-          >
-            {isWeapon && (
-              <div
-                className={`pointer-events-none absolute inset-x-0 bottom-0 z-0 transition-all duration-100 ${cooldownPct >= 1 ? 'bg-emerald-200' : 'bg-sky-200'}`}
-                style={{ height: `${cooldownPct * 100}%` }}
-                aria-hidden="true"
-              />
-            )}
-            <span className="relative z-10 text-base">{SLOT_ICONS[slot] ?? '?'}</span>
-            <p className="relative z-10 mt-0.5 max-w-[52px] truncate text-[9px] font-medium leading-tight">
-              {item.name}
-            </p>
-            {getTagIcon(item.tags) && (
-              <span className="absolute -right-1 -top-1 z-10 text-[10px]">
-                {getTagIcon(item.tags)}
-              </span>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function formatEventText(ev: BattleEvent, enemies: Enemy[]): { text: string; color: string } {
-  const sourceName =
-    ev.source === 'hero'
-      ? 'Hero'
-      : ev.source === 'system'
-        ? ''
-        : (enemies.find((e) => ev.source.startsWith(e.id))?.name ?? ev.source)
-  const targetName =
-    ev.target === 'hero'
-      ? 'Hero'
-      : ev.target === 'system'
-        ? ''
-        : (enemies.find((e) => ev.target.startsWith(e.id))?.name ?? ev.target)
-
-  switch (ev.type) {
-    case 'battle_start':
-      return { text: 'Battle begins!', color: 'text-sky-700' }
-    case 'attack': {
-      const val = Math.round(ev.value)
-      if (ev.source === 'hero')
-        return { text: `${sourceName} strikes ${targetName} for ${val}`, color: 'text-emerald-700' }
-      return { text: `${sourceName} attacks ${targetName} for ${val}`, color: 'text-rose-700' }
-    }
-    case 'crit':
-      return {
-        text: `Critical hit! ${sourceName} crits ${targetName}`,
-        color: 'text-amber-600',
-      }
-    case 'barrier_absorb':
-      return {
-        text: `${targetName}'s barrier absorbs ${Math.round(ev.value)}`,
-        color: 'text-cyan-600',
-      }
-    case 'thorns_reflect':
-      return {
-        text: `Thorns reflect ${Math.round(ev.value)} to ${targetName}`,
-        color: 'text-lime-700',
-      }
-    case 'status_apply': {
-      const statusType = ev.tags[0] ?? 'effect'
-      const icon = EFFECT_ICONS[statusType] ?? '✦'
-      return {
-        text: `${icon} ${sourceName} applies ${statusType} to ${targetName}`,
-        color: 'text-violet-600',
-      }
-    }
-    case 'status_tick': {
-      const statusType = ev.tags[0] ?? 'dot'
-      return {
-        text: `${EFFECT_ICONS[statusType] ?? '•'} ${statusType} ticks ${targetName} for ${Math.round(ev.value)}`,
-        color: 'text-violet-500',
-      }
-    }
-    case 'status_expire': {
-      const statusType = ev.tags[0] ?? 'effect'
-      return { text: `${statusType} fades from ${targetName}`, color: 'text-slate-500' }
-    }
-    case 'kill':
-      return { text: `${targetName} defeated!`, color: 'text-orange-600 font-bold' }
-    case 'hero_death':
-      return { text: `${targetName} has fallen!`, color: 'text-rose-700 font-bold' }
-    case 'battle_end':
-      return {
-        text: ev.value === 1 ? 'Victory!' : 'Defeat...',
-        color: ev.value === 1 ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold',
-      }
-    default:
-      return { text: `${ev.type}`, color: 'text-slate-500' }
-  }
-}
-
-const EventFeed = ({
-  events,
-  enemies,
-}: {
-  events: BattleEvent[]
-  enemies: Enemy[]
-}) => {
-  const feedRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (feedRef.current) {
-      feedRef.current.scrollTop = feedRef.current.scrollHeight
-    }
-  }, [events.length])
-
-  return (
-    <div
-      ref={feedRef}
-      className="max-h-32 space-y-0.5 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2"
-    >
-      {events.length === 0 && (
-        <p className="text-center text-xs text-slate-400">Waiting for battle to begin...</p>
-      )}
-      {events.map((ev, idx) => {
-        const { text, color } = formatEventText(ev, enemies)
-        return (
-          <div key={idx} className={`text-xs ${color}`}>
-            <span className="mr-1 text-slate-400">[{ev.timestamp.toFixed(1)}s]</span>
-            {text}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-const ResultOverlay = ({
-  battle,
-  pending,
-}: {
-  battle: BattleResult
-  pending: PendingBattle
-}) => {
-  const navigate = useNavigate()
-  const { clearPendingBattle } = useGameState()
-  const isVictory = battle.winner === 'hero'
-  const killCount = battle.events.filter((e) => e.type === 'kill').length
-  const critCount = battle.events.filter((e) => e.type === 'crit' && e.source === 'hero').length
-
-  const rarityColor: Record<string, string> = {
-    Common: 'text-slate-600',
-    Magic: 'text-blue-600',
-    Rare: 'text-yellow-600',
-    Epic: 'text-purple-600',
-    Legendary: 'text-orange-500',
-  }
-
-  return (
-    <div className="mt-3 space-y-3 rounded-xl border-2 border-slate-300 bg-white p-4">
-      <div
-        className={`rounded-lg border-2 p-3 text-center ${isVictory ? 'border-emerald-400 bg-emerald-50' : 'border-rose-400 bg-rose-50'}`}
-      >
-        <p className={`text-lg font-bold ${isVictory ? 'text-emerald-800' : 'text-rose-800'}`}>
-          {isVictory ? 'Victory' : 'Defeat'}
-        </p>
-        <p className="text-sm text-slate-600">{pending.encounterName}</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        <div className="rounded border border-slate-200 p-2">
-          <p className="text-xs text-slate-500">HP Remaining</p>
-          <p className="font-medium">{Math.round(battle.hpRemaining)}</p>
-        </div>
-        <div className="rounded border border-slate-200 p-2">
-          <p className="text-xs text-slate-500">Damage Dealt</p>
-          <p className="font-medium">{Math.round(battle.damageDealt)}</p>
-        </div>
-        <div className="rounded border border-slate-200 p-2">
-          <p className="text-xs text-slate-500">Damage Taken</p>
-          <p className="font-medium">{Math.round(battle.damageTaken)}</p>
-        </div>
-        <div className="rounded border border-slate-200 p-2">
-          <p className="text-xs text-slate-500">Duration</p>
-          <p className="font-medium">{(battle.durationMs / 1000).toFixed(1)}s</p>
-        </div>
-      </div>
-
-      <div className="flex gap-3 text-xs text-slate-600">
-        <span>Defeated: {killCount}</span>
-        <span>Crits: {critCount}</span>
-        {pending.xpGained > 0 && (
-          <span className="text-indigo-600">+{pending.xpGained} XP</span>
-        )}
-      </div>
-
-      {pending.loot.length > 0 && (
-        <div className="space-y-1">
-          <p className="text-sm font-medium">Loot</p>
-          {pending.loot.map((item) => (
-            <div
-              key={item.instanceId}
-              className={`rounded border border-slate-200 p-2 text-sm ${rarityColor[String(item.rarity)] ?? ''}`}
-            >
-              <span className="font-medium">{item.name}</span>
-              <span className="ml-2 text-xs text-slate-500">{item.slot}</span>
-              {item.affixes.length > 0 && (
-                <span className="ml-2 text-xs text-slate-400">
-                  ({item.affixes.map((a) => `+${a.value} ${a.stat}`).join(', ')})
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-      {isVictory && pending.loot.length === 0 && (
-        <p className="text-sm text-slate-500">No loot dropped this time.</p>
-      )}
-
-      <button
-        type="button"
-        className="w-full rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-medium text-white"
-        onClick={() => {
-          clearPendingBattle()
-          navigate('/map')
-        }}
-      >
-        Continue
-      </button>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
 // Floating damage numbers
 // ---------------------------------------------------------------------------
 
@@ -801,7 +484,6 @@ function useFloatingNumbers(events: BattleEvent[]) {
     }
   }, [events])
 
-  // Clean up old floating numbers
   useEffect(() => {
     if (numbers.length === 0) return
     const timer = setTimeout(() => {
@@ -811,6 +493,115 @@ function useFloatingNumbers(events: BattleEvent[]) {
   }, [numbers.length])
 
   return numbers
+}
+
+// ---------------------------------------------------------------------------
+// Sub-components
+// ---------------------------------------------------------------------------
+
+const SpeedControls = ({
+  speed,
+  onSetSpeed,
+  paused,
+  onTogglePause,
+  onSkip,
+  finished,
+}: {
+  speed: PlaybackSpeed
+  onSetSpeed: (s: PlaybackSpeed) => void
+  paused: boolean
+  onTogglePause: () => void
+  onSkip: () => void
+  finished: boolean
+}) => (
+  <div className="flex items-center gap-1.5">
+    {!finished && (
+      <button
+        type="button"
+        className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-800 text-xs font-medium text-white"
+        onClick={onTogglePause}
+      >
+        {paused ? '▶' : '⏸'}
+      </button>
+    )}
+    {([1, 1.5, 2] as const).map((s) => (
+      <button
+        key={s}
+        type="button"
+        className={`h-7 rounded-lg px-2 text-[11px] font-bold ${
+          speed === s
+            ? 'bg-sky-600 text-white'
+            : 'bg-slate-100 text-slate-600'
+        }`}
+        onClick={() => onSetSpeed(s)}
+      >
+        {s}x
+      </button>
+    ))}
+    {!finished && (
+      <button
+        type="button"
+        className="h-7 rounded-lg bg-slate-600 px-2.5 text-[11px] font-medium text-white"
+        onClick={onSkip}
+      >
+        Skip
+      </button>
+    )}
+  </div>
+)
+
+const HpBar = ({
+  current,
+  max,
+  color,
+  barrier,
+  size = 'md',
+}: {
+  current: number
+  max: number
+  color: string
+  barrier?: number
+  size?: 'sm' | 'md'
+}) => {
+  const pct = Math.max(0, Math.min(100, (current / max) * 100))
+  const barrierPct = barrier ? Math.max(0, Math.min(100 - pct, (barrier / max) * 100)) : 0
+  const h = size === 'sm' ? 'h-2.5' : 'h-3.5'
+  const fontSize = size === 'sm' ? 'text-[8px]' : 'text-[10px]'
+
+  return (
+    <div className={`relative ${h} w-full overflow-hidden rounded-full bg-slate-200`}>
+      <div
+        className={`absolute inset-y-0 left-0 rounded-full transition-all duration-300 ${color}`}
+        style={{ width: `${pct}%` }}
+      />
+      {barrierPct > 0 && (
+        <div
+          className="absolute inset-y-0 rounded-full bg-cyan-400 opacity-60"
+          style={{ left: `${pct}%`, width: `${barrierPct}%` }}
+        />
+      )}
+      <div className={`absolute inset-0 flex items-center justify-center font-bold text-slate-700 ${fontSize}`}>
+        {Math.round(current)}/{max}
+        {barrier && barrier > 0 ? ` +${Math.round(barrier)}` : ''}
+      </div>
+    </div>
+  )
+}
+
+const StatusBadges = ({ statuses }: { statuses: Array<{ type: string; expiresAt: number }> }) => {
+  if (statuses.length === 0) return null
+  return (
+    <div className="flex gap-1">
+      {statuses.map((s, i) => (
+        <span
+          key={`${s.type}_${i}`}
+          className="rounded bg-slate-800 px-1 py-0.5 text-[9px] text-white"
+        >
+          {EFFECT_ICONS[s.type] ?? '?'} {s.type}
+        </span>
+      ))}
+    </div>
+  )
 }
 
 const FloatingDamage = ({ numbers, targetId }: { numbers: FloatingNumber[]; targetId: string }) => {
@@ -845,6 +636,424 @@ const FloatingDamage = ({ numbers, targetId }: { numbers: FloatingNumber[]; targ
           </span>
         )
       })}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Arena components – compact hero + enemies
+// ---------------------------------------------------------------------------
+
+const HeroPanel = ({
+  hero,
+  playbackTime,
+}: {
+  hero: CombatantLiveState
+  playbackTime: number
+}) => {
+  const recentlyHit = playbackTime - hero.lastHitAt < 0.4
+
+  return (
+    <div
+      className={`rounded-xl border-2 p-2.5 transition-colors duration-200 ${
+        !hero.alive
+          ? 'border-rose-400 bg-rose-50'
+          : recentlyHit
+            ? 'border-red-400 bg-red-50'
+            : 'border-emerald-300 bg-emerald-50'
+      }`}
+    >
+      <div className="mb-1.5 flex items-center gap-2">
+        <span className="text-2xl">🧑‍🦱</span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold">{hero.name}</p>
+        </div>
+      </div>
+      <HpBar current={hero.hp} max={hero.maxHp} color="bg-emerald-500" barrier={hero.barrier} />
+      <div className="mt-1">
+        <StatusBadges statuses={hero.statuses} />
+      </div>
+    </div>
+  )
+}
+
+const EnemyRow = ({
+  enemy,
+  playbackTime,
+}: {
+  enemy: CombatantLiveState
+  playbackTime: number
+}) => {
+  const visual = getEnemyVisual(enemy.id)
+  const recentlyHit = playbackTime - enemy.lastHitAt < 0.4
+  const recentlyAttacked = playbackTime - enemy.lastActionAt < 0.5
+
+  if (!enemy.alive) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 opacity-40">
+        <span className="text-base">{visual.icon}</span>
+        <p className="flex-1 truncate text-xs text-slate-400 line-through">{enemy.name}</p>
+        <span className="text-[9px] font-semibold text-rose-500">KO</span>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={`rounded-lg border-2 px-2 py-1.5 transition-colors duration-200 ${
+        recentlyAttacked
+          ? 'border-amber-400 bg-amber-50'
+          : recentlyHit
+            ? 'border-red-400 bg-red-50'
+            : `border-slate-200 ${visual.bg}`
+      }`}
+    >
+      <div className="mb-1 flex items-center gap-1.5">
+        <span className="text-base">{visual.icon}</span>
+        <p className="min-w-0 flex-1 truncate text-xs font-semibold">{enemy.name}</p>
+      </div>
+      <HpBar current={enemy.hp} max={enemy.maxHp} color="bg-rose-500" size="sm" />
+      {enemy.statuses.length > 0 && (
+        <div className="mt-0.5">
+          <StatusBadges statuses={enemy.statuses} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Item Board – the autobattler centerpiece
+// ---------------------------------------------------------------------------
+
+const ItemCard = ({
+  slot,
+  item,
+  cooldownPct,
+  lastActivatedAt,
+  playbackTime,
+}: {
+  slot: string
+  item: Item
+  cooldownPct: number
+  lastActivatedAt: number
+  playbackTime: number
+}) => {
+  const isActivated = playbackTime - lastActivatedAt < 0.4
+  const isReady = cooldownPct >= 1 && !isActivated
+  const statLabels = getStatLabels(item)
+  const tagIcon = getTagIcon(item.tags)
+
+  return (
+    <div
+      className={`relative flex flex-col items-center overflow-hidden rounded-xl border-2 px-2 py-2 transition-all duration-200 ${
+        isActivated
+          ? `${RARITY_BORDER[item.rarity] ?? 'border-amber-400'} scale-[1.08] shadow-lg ${RARITY_GLOW[item.rarity] ?? 'shadow-amber-400/50'}`
+          : isReady
+            ? `${RARITY_BORDER[item.rarity] ?? 'border-slate-300'} ring-2 ring-offset-1 ${RARITY_READY_RING[item.rarity] ?? 'ring-slate-300'} shadow-md ${RARITY_GLOW[item.rarity] ?? ''}`
+            : 'border-slate-200 bg-slate-50'
+      }`}
+    >
+      {/* Cooldown fill from bottom */}
+      <div
+        className={`pointer-events-none absolute inset-x-0 bottom-0 z-0 transition-all duration-150 ${
+          isActivated
+            ? 'bg-amber-200/60'
+            : cooldownPct >= 1
+              ? 'bg-emerald-200/50'
+              : 'bg-sky-200/40'
+        }`}
+        style={{ height: `${cooldownPct * 100}%` }}
+        aria-hidden="true"
+      />
+
+      {/* Activation burst */}
+      {isActivated && (
+        <div className="pointer-events-none absolute inset-0 z-20 animate-ping rounded-xl bg-white/30" />
+      )}
+
+      {/* Tag icon badge */}
+      <span className="absolute right-0.5 top-0.5 z-10 text-[10px]">{tagIcon}</span>
+
+      {/* Slot icon */}
+      <span className="relative z-10 text-xl leading-none">{SLOT_ICONS[slot] ?? '?'}</span>
+
+      {/* Item name */}
+      <p className="relative z-10 mt-1 max-w-full truncate text-center text-[10px] font-bold leading-tight text-slate-700">
+        {item.name}
+      </p>
+
+      {/* Stat labels */}
+      {statLabels.map((label) => (
+        <p
+          key={label}
+          className={`relative z-10 text-[9px] font-semibold leading-tight ${
+            isActivated ? 'text-amber-700' : 'text-slate-500'
+          }`}
+        >
+          {label}
+        </p>
+      ))}
+
+      {/* Cooldown bar (thin, at the very bottom of card) */}
+      <div className="relative z-10 mt-1.5 h-1 w-full overflow-hidden rounded-full bg-slate-200/80">
+        <div
+          className={`h-full rounded-full transition-all duration-150 ${
+            isActivated
+              ? 'bg-amber-400'
+              : cooldownPct >= 1
+                ? 'bg-emerald-400'
+                : 'bg-sky-400'
+          }`}
+          style={{ width: `${cooldownPct * 100}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+const EmptySlot = ({ slot }: { slot: string }) => (
+  <div className="flex flex-col items-center rounded-xl border-2 border-dashed border-slate-200 px-2 py-2 opacity-30">
+    <span className="text-lg leading-none">{SLOT_ICONS[slot] ?? '?'}</span>
+    <p className="mt-1 text-[9px] capitalize text-slate-400">{slot}</p>
+  </div>
+)
+
+const DISPLAY_SLOTS = ['weapon', 'offhand', 'armor', 'boots', 'ring', 'amulet', 'relic']
+
+const ItemBoard = ({
+  items,
+  cooldownPct,
+  itemActivations,
+  playbackTime,
+}: {
+  items: Partial<Record<string, Item>>
+  cooldownPct: number
+  itemActivations: Record<string, number>
+  playbackTime: number
+}) => {
+  const equippedSlots = DISPLAY_SLOTS.filter((s) => items[s] != null)
+  const emptySlots = DISPLAY_SLOTS.filter((s) => items[s] == null)
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-3">
+      <div className="grid grid-cols-3 gap-2">
+        {equippedSlots.map((slot) => (
+          <ItemCard
+            key={slot}
+            slot={slot}
+            item={items[slot]!}
+            cooldownPct={cooldownPct}
+            lastActivatedAt={itemActivations[slot] ?? -10}
+            playbackTime={playbackTime}
+          />
+        ))}
+        {emptySlots.map((slot) => (
+          <EmptySlot key={slot} slot={slot} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Event feed – compact
+// ---------------------------------------------------------------------------
+
+function formatEventText(ev: BattleEvent, enemies: Enemy[]): { text: string; color: string } {
+  const sourceName =
+    ev.source === 'hero'
+      ? 'Hero'
+      : ev.source === 'system'
+        ? ''
+        : (enemies.find((e) => ev.source.startsWith(e.id))?.name ?? ev.source)
+  const targetName =
+    ev.target === 'hero'
+      ? 'Hero'
+      : ev.target === 'system'
+        ? ''
+        : (enemies.find((e) => ev.target.startsWith(e.id))?.name ?? ev.target)
+
+  switch (ev.type) {
+    case 'battle_start':
+      return { text: 'Battle begins!', color: 'text-sky-700' }
+    case 'attack': {
+      const val = Math.round(ev.value)
+      if (ev.source === 'hero')
+        return { text: `Hero hits ${targetName} for ${val}`, color: 'text-emerald-700' }
+      return { text: `${sourceName} hits Hero for ${val}`, color: 'text-rose-700' }
+    }
+    case 'crit':
+      return { text: `CRIT! ${sourceName} crits ${targetName}`, color: 'text-amber-600' }
+    case 'barrier_absorb':
+      return { text: `Barrier absorbs ${Math.round(ev.value)}`, color: 'text-cyan-600' }
+    case 'thorns_reflect':
+      return { text: `Thorns reflect ${Math.round(ev.value)}`, color: 'text-lime-700' }
+    case 'status_apply': {
+      const statusType = ev.tags[0] ?? 'effect'
+      const icon = EFFECT_ICONS[statusType] ?? '✦'
+      return { text: `${icon} ${statusType} on ${targetName}`, color: 'text-violet-600' }
+    }
+    case 'status_tick': {
+      const statusType = ev.tags[0] ?? 'dot'
+      return {
+        text: `${EFFECT_ICONS[statusType] ?? '•'} ${statusType} ${Math.round(ev.value)} to ${targetName}`,
+        color: 'text-violet-500',
+      }
+    }
+    case 'status_expire': {
+      const statusType = ev.tags[0] ?? 'effect'
+      return { text: `${statusType} fades from ${targetName}`, color: 'text-slate-400' }
+    }
+    case 'kill':
+      return { text: `${targetName} defeated!`, color: 'text-orange-600 font-bold' }
+    case 'hero_death':
+      return { text: `Hero has fallen!`, color: 'text-rose-700 font-bold' }
+    case 'battle_end':
+      return {
+        text: ev.value === 1 ? 'Victory!' : 'Defeat...',
+        color: ev.value === 1 ? 'text-emerald-700 font-bold' : 'text-rose-700 font-bold',
+      }
+    default:
+      return { text: `${ev.type}`, color: 'text-slate-500' }
+  }
+}
+
+const EventFeed = ({
+  events,
+  enemies,
+}: {
+  events: BattleEvent[]
+  enemies: Enemy[]
+}) => {
+  const feedRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (feedRef.current) {
+      feedRef.current.scrollTop = feedRef.current.scrollHeight
+    }
+  }, [events.length])
+
+  return (
+    <div
+      ref={feedRef}
+      className="max-h-24 space-y-0.5 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/80 p-2"
+    >
+      {events.length === 0 && (
+        <p className="text-center text-[10px] text-slate-400">Waiting for battle...</p>
+      )}
+      {events.map((ev, idx) => {
+        const { text, color } = formatEventText(ev, enemies)
+        return (
+          <div key={idx} className={`text-[11px] leading-tight ${color}`}>
+            <span className="mr-1 text-slate-300">{ev.timestamp.toFixed(1)}s</span>
+            {text}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Result overlay
+// ---------------------------------------------------------------------------
+
+const ResultOverlay = ({
+  battle,
+  pending,
+}: {
+  battle: BattleResult
+  pending: PendingBattle
+}) => {
+  const navigate = useNavigate()
+  const { clearPendingBattle } = useGameState()
+  const isVictory = battle.winner === 'hero'
+  const killCount = battle.events.filter((e) => e.type === 'kill').length
+  const critCount = battle.events.filter((e) => e.type === 'crit' && e.source === 'hero').length
+
+  const rarityColor: Record<string, string> = {
+    Common: 'text-slate-600',
+    Magic: 'text-blue-600',
+    Rare: 'text-yellow-600',
+    Epic: 'text-purple-600',
+    Legendary: 'text-orange-500',
+  }
+
+  return (
+    <div className="mt-2 space-y-3 rounded-2xl border-2 border-slate-300 bg-white p-4 shadow-lg">
+      <div
+        className={`rounded-xl border-2 p-3 text-center ${
+          isVictory ? 'border-emerald-400 bg-emerald-50' : 'border-rose-400 bg-rose-50'
+        }`}
+      >
+        <p className={`text-lg font-bold ${isVictory ? 'text-emerald-800' : 'text-rose-800'}`}>
+          {isVictory ? 'Victory' : 'Defeat'}
+        </p>
+        <p className="text-sm text-slate-600">{pending.encounterName}</p>
+      </div>
+
+      {/* Stats grid */}
+      <div className="grid grid-cols-4 gap-1.5 text-center">
+        <div className="rounded-lg bg-slate-50 p-1.5">
+          <p className="text-[9px] text-slate-400">HP Left</p>
+          <p className="text-sm font-bold">{Math.round(battle.hpRemaining)}</p>
+        </div>
+        <div className="rounded-lg bg-slate-50 p-1.5">
+          <p className="text-[9px] text-slate-400">Dealt</p>
+          <p className="text-sm font-bold text-emerald-600">{Math.round(battle.damageDealt)}</p>
+        </div>
+        <div className="rounded-lg bg-slate-50 p-1.5">
+          <p className="text-[9px] text-slate-400">Taken</p>
+          <p className="text-sm font-bold text-rose-600">{Math.round(battle.damageTaken)}</p>
+        </div>
+        <div className="rounded-lg bg-slate-50 p-1.5">
+          <p className="text-[9px] text-slate-400">Time</p>
+          <p className="text-sm font-bold">{(battle.durationMs / 1000).toFixed(1)}s</p>
+        </div>
+      </div>
+
+      <div className="flex gap-3 text-xs text-slate-500">
+        <span>Defeated: {killCount}</span>
+        <span>Crits: {critCount}</span>
+        {pending.xpGained > 0 && (
+          <span className="font-medium text-indigo-600">+{pending.xpGained} XP</span>
+        )}
+      </div>
+
+      {pending.loot.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-xs font-bold text-slate-700">Loot</p>
+          {pending.loot.map((item) => (
+            <div
+              key={item.instanceId}
+              className={`rounded-lg border border-slate-200 p-2 text-sm ${rarityColor[String(item.rarity)] ?? ''}`}
+            >
+              <span className="font-medium">{item.name}</span>
+              <span className="ml-2 text-xs text-slate-500">{item.slot}</span>
+              {item.affixes.length > 0 && (
+                <span className="ml-2 text-xs text-slate-400">
+                  ({item.affixes.map((a) => `+${a.value} ${a.stat}`).join(', ')})
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {isVictory && pending.loot.length === 0 && (
+        <p className="text-sm text-slate-500">No loot dropped this time.</p>
+      )}
+
+      <button
+        type="button"
+        className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white"
+        onClick={() => {
+          clearPendingBattle()
+          navigate('/map')
+        }}
+      >
+        Continue
+      </button>
     </div>
   )
 }
@@ -898,6 +1107,19 @@ const BattleScreenInner = ({
 
   const floatingNumbers = useFloatingNumbers(playbackState.recentEvents)
 
+  // Derive item activations from recent events
+  const itemActivations = useMemo(
+    () => deriveItemActivations(playbackState.recentEvents, heroSnapshot.equippedItems),
+    [playbackState.recentEvents, heroSnapshot.equippedItems],
+  )
+
+  // All items charge together with the weapon cooldown
+  const elapsed = playbackState.time - playbackState.lastHeroAttackAt
+  const cooldownPct =
+    playbackState.lastHeroAttackAt >= 0
+      ? Math.min(1, elapsed / heroCooldown)
+      : Math.min(1, playbackState.time / heroCooldown)
+
   const tierLabel = pending.encounterType === 'elite' ? 'Elite' : 'Standard'
   const progressPct = Math.min(
     100,
@@ -905,15 +1127,15 @@ const BattleScreenInner = ({
   )
 
   return (
-    <section className="space-y-3">
-      {/* Header: title + speed controls */}
+    <section className="space-y-2.5 pb-2">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold">{pending.encounterName}</h1>
+          <h1 className="text-base font-bold leading-tight">{pending.encounterName}</h1>
           <p className="text-[10px] text-slate-500">
             {tierLabel} Encounter
             {isDevMode && (
-              <span className="ml-2 rounded bg-indigo-100 px-1 py-0.5 text-indigo-700">DEV</span>
+              <span className="ml-1.5 rounded bg-indigo-100 px-1 py-0.5 text-indigo-700">DEV</span>
             )}
           </p>
         </div>
@@ -927,52 +1149,54 @@ const BattleScreenInner = ({
         />
       </div>
 
-      {/* Progress bar */}
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
-        <div
-          className="h-full rounded-full bg-sky-500 transition-all duration-200"
-          style={{ width: `${progressPct}%` }}
-        />
+      {/* Battle timer */}
+      <div className="flex items-center gap-2">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+          <div
+            className="h-full rounded-full bg-sky-500 transition-all duration-200"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+        <span className="text-[10px] tabular-nums text-slate-400">
+          {playbackState.time.toFixed(1)}s
+        </span>
       </div>
 
-      {/* Battle arena: hero vs enemies */}
-      <div className="flex gap-3">
+      {/* Arena: hero vs enemies */}
+      <div className="flex gap-2">
         {/* Hero side */}
         <div className="relative flex-1">
           <HeroPanel hero={playbackState.hero} playbackTime={playbackState.time} />
           <FloatingDamage numbers={floatingNumbers} targetId="hero" />
         </div>
 
-        {/* VS divider */}
-        <div className="flex items-center">
-          <span className="text-lg font-bold text-slate-300">VS</span>
-        </div>
-
         {/* Enemy side */}
-        <div className="flex flex-1 flex-col gap-2">
+        <div className="flex flex-1 flex-col gap-1.5">
           {playbackState.enemies.map((enemy) => (
             <div key={enemy.id} className="relative">
-              <EnemyCard enemy={enemy} playbackTime={playbackState.time} />
+              <EnemyRow enemy={enemy} playbackTime={playbackState.time} />
               <FloatingDamage numbers={floatingNumbers} targetId={enemy.id} />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Item/action bar */}
+      {/* Item Board – autobattler centerpiece */}
       <div>
-        <p className="mb-1 text-[10px] font-medium text-slate-500">EQUIPPED BUILD</p>
-        <ItemActionBar
+        <p className="mb-1.5 text-center text-[10px] font-bold tracking-widest text-slate-400">
+          YOUR BUILD
+        </p>
+        <ItemBoard
           items={heroSnapshot.equippedItems}
-          heroCooldown={heroCooldown}
-          lastAttackAt={playbackState.lastHeroAttackAt}
+          cooldownPct={cooldownPct}
+          itemActivations={itemActivations}
           playbackTime={playbackState.time}
         />
       </div>
 
-      {/* Event feed */}
+      {/* Battle feed */}
       <div>
-        <p className="mb-1 text-[10px] font-medium text-slate-500">BATTLE LOG</p>
+        <p className="mb-1 text-[10px] font-medium text-slate-400">BATTLE LOG</p>
         <EventFeed events={playbackState.recentEvents} enemies={enemies} />
       </div>
 
