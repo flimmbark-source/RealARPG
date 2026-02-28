@@ -23,7 +23,7 @@ interface ArchetypeTemplate {
   id: ArchetypeId
   name: string
   tags: string[]
-  equippedBaseIds: Record<ItemSlot, string>
+  equippedBaseIds: Partial<Record<ItemSlot, string>>
 }
 
 const itemTable = itemsData as { bases: ItemBase[]; legendaries: LegendaryTemplate[]; sets: SetTemplate[] }
@@ -255,6 +255,7 @@ export const buildArchetypeStarter = (archetypeId: ArchetypeId): HeroState => {
 
   for (const slot of slotOrder) {
     const baseId = template.equippedBaseIds[slot]
+    if (!baseId) continue
     hero = equipItem(hero, generateItem(baseId, Rarity.Common, `${template.id}${slot}`.length * 13))
   }
 
