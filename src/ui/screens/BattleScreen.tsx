@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 
-import { calcEffectiveCooldown } from '../../types'
 import type { BattleEvent, BattleResult, Enemy, HeroState, Item } from '../../types'
 import { useGameState, type PendingBattle } from '../GameStateContext'
 
@@ -106,93 +105,49 @@ function getStatLabels(item: Item): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Item activation detection – maps battle events to equipped item slots
+// Per-item cooldown system – each item independently charges and fires
 // ---------------------------------------------------------------------------
 
-function getActivatedSlots(
-  ev: BattleEvent,
-  equippedItems: Partial<Record<string, Item>>,
-): string[] {
-  const activated: string[] = []
-  const items = Object.entries(equippedItems).filter(
-    ([, item]) => item != null,
-  ) as [string, Item][]
-
-  switch (ev.type) {
-    case 'attack': {
-      if (ev.source === 'hero') {
-        if (equippedItems.weapon) activated.push('weapon')
-        for (const [slot, item] of items) {
-          if (slot !== 'weapon' && item.finalStats.atk && item.finalStats.atk > 0) {
-            activated.push(slot)
-          }
-        }
-      } else if (ev.target === 'hero') {
-        for (const [slot, item] of items) {
-          if (item.finalStats.def && item.finalStats.def > 0) {
-            activated.push(slot)
-          }
-        }
-      }
-      break
-    }
-    case 'crit': {
-      if (ev.source === 'hero') {
-        for (const [slot, item] of items) {
-          if (item.finalStats.critChance || item.finalStats.critMultiplier) {
-            activated.push(slot)
-          }
-        }
-      }
-      break
-    }
-    case 'barrier_absorb': {
-      if (ev.target === 'hero') {
-        for (const [slot, item] of items) {
-          if (item.finalStats.def || item.tags.includes('barrier')) {
-            activated.push(slot)
-          }
-        }
-      }
-      break
-    }
-    case 'thorns_reflect': {
-      for (const [slot, item] of items) {
-        if (item.tags.includes('thorns')) {
-          activated.push(slot)
-        }
-      }
-      break
-    }
-    case 'status_apply': {
-      if (ev.source === 'hero') {
-        for (const [slot, item] of items) {
-          if (ev.tags.some((t) => item.tags.includes(t))) {
-            activated.push(slot)
-          }
-        }
-      }
-      break
-    }
-  }
-
-  return [...new Set(activated)]
+const SLOT_BASE_COOLDOWNS: Record<string, number> = {
+  weapon: 4.0,
+  offhand: 5.0,
+  armor: 6.0,
+  boots: 3.5,
+  ring: 5.0,
+  amulet: 5.5,
+  relic: 7.0,
 }
 
-function deriveItemActivations(
-  recentEvents: BattleEvent[],
-  equippedItems: Partial<Record<string, Item>>,
-): Record<string, number> {
-  const activations: Record<string, number> = {}
-  for (const ev of recentEvents) {
-    const slots = getActivatedSlots(ev, equippedItems)
-    for (const slot of slots) {
-      if (!activations[slot] || ev.timestamp > activations[slot]) {
-        activations[slot] = ev.timestamp
-      }
-    }
-  }
-  return activations
+function getItemCooldown(slot: string, item: Item): number {
+  const base = SLOT_BASE_COOLDOWNS[slot] ?? 5.0
+  // Item cooldown stat (typically negative) makes it faster
+  const cdMod = item.finalStats.cooldown ?? 0
+  // Haste on the item also reduces cooldown
+  const hasteMod = item.finalStats.haste ?? 0
+  const adjusted = base + cdMod
+  return Math.max(2.0, hasteMod > 0 ? adjusted / (1 + hasteMod / 100) : adjusted)
+}
+
+interface ItemCooldownInfo {
+  progress: number
+  justActivated: boolean
+  cooldown: number
+}
+
+function computeItemCooldownState(
+  slot: string,
+  item: Item,
+  playbackTime: number,
+): ItemCooldownInfo {
+  const cd = getItemCooldown(slot, item)
+  // How many full cycles have completed since battle start?
+  const cyclesSoFar = Math.floor(playbackTime / cd)
+  const lastActivatedAt = cyclesSoFar * cd
+  const elapsed = playbackTime - lastActivatedAt
+  const progress = Math.min(1, elapsed / cd)
+  // Show activation flash for 0.5s after each cooldown completion
+  const justActivated = elapsed < 0.5 && cyclesSoFar > 0
+  return { progress, justActivated, cooldown: cd }
 }
 
 // ---------------------------------------------------------------------------
@@ -729,46 +684,41 @@ const EnemyRow = ({
 const ItemCard = ({
   slot,
   item,
-  cooldownPct,
-  lastActivatedAt,
-  playbackTime,
+  cdInfo,
 }: {
   slot: string
   item: Item
-  cooldownPct: number
-  lastActivatedAt: number
-  playbackTime: number
+  cdInfo: ItemCooldownInfo
 }) => {
-  const isActivated = playbackTime - lastActivatedAt < 0.4
-  const isReady = cooldownPct >= 1 && !isActivated
+  const { progress, justActivated, cooldown } = cdInfo
   const statLabels = getStatLabels(item)
   const tagIcon = getTagIcon(item.tags)
 
   return (
     <div
       className={`relative flex flex-col items-center overflow-hidden rounded-xl border-2 px-2 py-2 transition-all duration-200 ${
-        isActivated
+        justActivated
           ? `${RARITY_BORDER[item.rarity] ?? 'border-amber-400'} scale-[1.08] shadow-lg ${RARITY_GLOW[item.rarity] ?? 'shadow-amber-400/50'}`
-          : isReady
+          : progress >= 0.9
             ? `${RARITY_BORDER[item.rarity] ?? 'border-slate-300'} ring-2 ring-offset-1 ${RARITY_READY_RING[item.rarity] ?? 'ring-slate-300'} shadow-md ${RARITY_GLOW[item.rarity] ?? ''}`
             : 'border-slate-200 bg-slate-50'
       }`}
     >
       {/* Cooldown fill from bottom */}
       <div
-        className={`pointer-events-none absolute inset-x-0 bottom-0 z-0 transition-all duration-150 ${
-          isActivated
+        className={`pointer-events-none absolute inset-x-0 bottom-0 z-0 transition-all duration-200 ${
+          justActivated
             ? 'bg-amber-200/60'
-            : cooldownPct >= 1
+            : progress >= 0.9
               ? 'bg-emerald-200/50'
               : 'bg-sky-200/40'
         }`}
-        style={{ height: `${cooldownPct * 100}%` }}
+        style={{ height: `${progress * 100}%` }}
         aria-hidden="true"
       />
 
       {/* Activation burst */}
-      {isActivated && (
+      {justActivated && (
         <div className="pointer-events-none absolute inset-0 z-20 animate-ping rounded-xl bg-white/30" />
       )}
 
@@ -788,26 +738,31 @@ const ItemCard = ({
         <p
           key={label}
           className={`relative z-10 text-[9px] font-semibold leading-tight ${
-            isActivated ? 'text-amber-700' : 'text-slate-500'
+            justActivated ? 'text-amber-700' : 'text-slate-500'
           }`}
         >
           {label}
         </p>
       ))}
 
-      {/* Cooldown bar (thin, at the very bottom of card) */}
-      <div className="relative z-10 mt-1.5 h-1 w-full overflow-hidden rounded-full bg-slate-200/80">
+      {/* Cooldown bar */}
+      <div className="relative z-10 mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80">
         <div
-          className={`h-full rounded-full transition-all duration-150 ${
-            isActivated
+          className={`h-full rounded-full transition-all duration-200 ${
+            justActivated
               ? 'bg-amber-400'
-              : cooldownPct >= 1
+              : progress >= 0.9
                 ? 'bg-emerald-400'
                 : 'bg-sky-400'
           }`}
-          style={{ width: `${cooldownPct * 100}%` }}
+          style={{ width: `${progress * 100}%` }}
         />
       </div>
+
+      {/* Cooldown timer label */}
+      <p className="relative z-10 mt-0.5 text-[8px] tabular-nums text-slate-400">
+        {justActivated ? 'ACTIVE' : `${cooldown.toFixed(1)}s`}
+      </p>
     </div>
   )
 }
@@ -823,13 +778,9 @@ const DISPLAY_SLOTS = ['weapon', 'offhand', 'armor', 'boots', 'ring', 'amulet', 
 
 const ItemBoard = ({
   items,
-  cooldownPct,
-  itemActivations,
   playbackTime,
 }: {
   items: Partial<Record<string, Item>>
-  cooldownPct: number
-  itemActivations: Record<string, number>
   playbackTime: number
 }) => {
   const equippedSlots = DISPLAY_SLOTS.filter((s) => items[s] != null)
@@ -838,16 +789,18 @@ const ItemBoard = ({
   return (
     <div className="rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-3">
       <div className="grid grid-cols-3 gap-2">
-        {equippedSlots.map((slot) => (
-          <ItemCard
-            key={slot}
-            slot={slot}
-            item={items[slot]!}
-            cooldownPct={cooldownPct}
-            lastActivatedAt={itemActivations[slot] ?? -10}
-            playbackTime={playbackTime}
-          />
-        ))}
+        {equippedSlots.map((slot) => {
+          const item = items[slot]!
+          const cdInfo = computeItemCooldownState(slot, item, playbackTime)
+          return (
+            <ItemCard
+              key={slot}
+              slot={slot}
+              item={item}
+              cdInfo={cdInfo}
+            />
+          )
+        })}
         {emptySlots.map((slot) => (
           <EmptySlot key={slot} slot={slot} />
         ))}
@@ -1094,10 +1047,6 @@ const BattleScreenInner = ({
   isDevMode: boolean
 }) => {
   const { battle, enemies, heroSnapshot } = pending
-  const heroCooldown = useMemo(
-    () => calcEffectiveCooldown(2, heroSnapshot.haste),
-    [heroSnapshot.haste],
-  )
 
   const { playbackState, speed, setSpeed, paused, setPaused, skipToEnd } = useBattlePlayback(
     battle,
@@ -1106,19 +1055,6 @@ const BattleScreenInner = ({
   )
 
   const floatingNumbers = useFloatingNumbers(playbackState.recentEvents)
-
-  // Derive item activations from recent events
-  const itemActivations = useMemo(
-    () => deriveItemActivations(playbackState.recentEvents, heroSnapshot.equippedItems),
-    [playbackState.recentEvents, heroSnapshot.equippedItems],
-  )
-
-  // All items charge together with the weapon cooldown
-  const elapsed = playbackState.time - playbackState.lastHeroAttackAt
-  const cooldownPct =
-    playbackState.lastHeroAttackAt >= 0
-      ? Math.min(1, elapsed / heroCooldown)
-      : Math.min(1, playbackState.time / heroCooldown)
 
   const tierLabel = pending.encounterType === 'elite' ? 'Elite' : 'Standard'
   const progressPct = Math.min(
@@ -1188,8 +1124,6 @@ const BattleScreenInner = ({
         </p>
         <ItemBoard
           items={heroSnapshot.equippedItems}
-          cooldownPct={cooldownPct}
-          itemActivations={itemActivations}
           playbackTime={playbackState.time}
         />
       </div>
